@@ -1,28 +1,36 @@
-(function (window, socket) {
+;(function (window, socket) {
 
     socket.on("connection", function () {
 
-        var elems = document.getElementsByTagName("*");
-        var ids = [];
-
-        for (var i = 0, n = elems.length; i < n; i += 1) {
-            if (elems[i].id) {
-                ids.push(elems[i].id);
-            }
-        }
-
-        socket.emit("client:ids", {
-            url: window.location.href,
-            ids: ids
+        socket.emit("client:url", {
+            url: window.location.href
         });
     });
 
     socket.on("html:inject", function (data) {
 
-        var elem   = document.getElementById(data.id);
+        var elems = document.getElementsByTagName(data.tagName);
+
+        var elem = elems[data.index];
 
         if (elem) {
-            elem.innerHTML = data.html;
+
+            elem.innerHTML     = data.html;
+
+            var attrs = elem.attributes;
+            var name;
+            var index;
+
+            // Remove all attributes from element
+            for (index = attrs.length - 1; index >= 0; --index) {
+                name = attrs[index].nodeName;
+                elem.removeAttribute(name);
+            }
+
+            // Add new ones
+            for (var key in data.attrs) {
+                elem.setAttribute(key, data.attrs[key]);
+            }
         }
     });
 
