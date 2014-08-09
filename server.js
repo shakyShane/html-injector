@@ -1,42 +1,43 @@
-var http = require("http");
-var _ = require("lodash");
-var fs = require("fs");
-var jsdom = require("jsdom").jsdom;
+var http        = require("http");
+var _           = require("lodash");
+var jsdom       = require("jsdom").jsdom;
 var serveStatic = require('serve-static');
-var through = require("through");
-var connect = require("connect");
-var ports = require("portscanner-plus");
-var tfunk = require("tfunk");
-
-var oldDom;
+var connect     = require("connect");
+var ports       = require("portscanner-plus");
+var tfunk       = require("tfunk");
 
 var validUrls = [];
 var PLUGIN_NAME = "HTML Injector";
 
 module.exports = {
 
+    /**
+     * Plugin name
+     */
     name: PLUGIN_NAME,
 
+    /**
+     *
+     * @param {BrowserSync} bs
+     * @param opts
+     */
     plugin: function (bs, opts) {
 
         var ids = opts.id;
+
         if (!Array.isArray(ids)) {
             ids = [id];
         }
 
         var url;
-        var log = bs.getLogger(PLUGIN_NAME);
-        var selectedId;
+        var id;
+        var sockets     = bs.io.sockets;
+        var log         = bs.getLogger(PLUGIN_NAME);
+        var inject      = getInjector(sockets);
 
-        ports.getPorts(1).then(start.bind(bs, opts));
+        ports.getPorts(1).then(start.bind(bs, opts, log));
 
-        bs.io.sockets.on("connection", function (client) {
-
-            client.on("client:url", function (data) {
-                if (!_.contains(validUrls, data.location.pathname)) {
-                    validUrls.push(data.location.pathname);
-                }
-            });
+        sockets.on("connection", function (client) {
 
             client.on("client:ids", function (data) {
                 url = data.url;
@@ -44,11 +45,11 @@ module.exports = {
             });
 
             client.on("client:control:set", function (data) {
-                selectedId = data.id;
+                id = data.id;
             });
 
             if (ids && url) {
-                bs.io.sockets.emit("client:control:ids", {url: url, ids: ids});
+                sockets.emit("client:control:ids", {url: url, ids: ids});
             }
         });
 
@@ -69,34 +70,10 @@ module.exports = {
                 res.on("data", function (data) {
                     chunks.push(data);
                 }).on("end", function () {
-                    inject(chunks.join(""));
+                    inject(chunks.join(""), id);
                 });
             });
         });
-
-        function inject(string, url) {
-
-            var newDom = jsdom(string);
-
-            //
-            var window = newDom.parentWindow;
-
-            if (selectedId) {
-                var elem = window.document.getElementById(selectedId);
-                if (elem) {
-                    //                    log("notify", "Injecting HTML into: #" + id);
-                    bs.io.sockets.emit("html:inject", {html: elem.innerHTML, id: selectedId});
-                }
-            }
-        }
-    },
-    "server:routes": function () {
-        return {
-            "/html-injector": __dirname
-        }
-    },
-    "client:events": function () {
-        return ["client:url", "client:ids", "client:control:ids", "client:control:set"];
     },
     "client:js": function () {
         return require("fs").readFileSync(__dirname + "/client.js");
@@ -104,64 +81,41 @@ module.exports = {
 };
 
 /**
- * @param connector
+ * @param sockets
  * @returns {Function}
  */
-function getScriptMiddleware(connector) {
+function getInjector(sockets) {
 
-    var jsFile = "/lib/cp.js";
+    return function (string, id) {
 
-    return function (req, res, next) {
+        var newDom = jsdom(string);
 
-        res.setHeader("Content-Type", "text/javascript");
+        var window = newDom.parentWindow;
 
-        return fs.createReadStream(__dirname + jsFile)
-            .pipe(through(function (buffer) {
-                this.queue(connector + buffer.toString());
-            }))
-            .pipe(res);
-    };
+        var elem = window.document.getElementById(id);
+
+        if (elem) {
+            sockets.emit("html:inject", {html: elem.innerHTML, id: id});
+        }
+    }
 }
 
 /**
- * @param options
- * @returns {*}
+ * @param {Array} ports
+ * @param {Object} opts - plugin options
+ * @param {Function} log - namespaced logger
  */
-function startServer(options) {
-
-    var app = connect();
-
-    var connector = getConnector(options.urls.local);
-
-    app.use("/cp.js", getScriptMiddleware(connector));
-    app.use(serveStatic(__dirname + "/lib"));
-
-    return http.createServer(app);
-}
-
-/**
- * @param url
- * @returns {string}
- */
-function getConnector(url) {
-    return "var ___socket___ = io.connect('%s');".replace("%s", url);
-}
-
-/**
- * @param ports
- */
-function start(opts, ports) {
+function start(opts, log, ports) {
 
     var bs = this; // jshint ignore:line
+    var app = connect();
     var port = ports[0];
 
-//    log("debug", "Using port " + port);
-//
-//    log("debug", "Starting ");
+    app.use("/connector.js", bs.getMiddleware("connector"));
+    app.use("/socket.io.js", bs.getMiddleware("socket-js"));
+    app.use(serveStatic(__dirname + "/lib"));
 
-    var server = startServer(bs.options);
+    http.createServer(app).listen(port);
 
-    server.listen(port);
-
-//    log("info", tfunk("Running at: %Ccyan:http://localhost:" + port));
+    log("info", tfunk("Controls available at: %Ccyan:http://localhost:" + port));
 }
