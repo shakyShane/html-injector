@@ -1,10 +1,13 @@
-var bs = require("/Users/shakyshane/Sites/os-browser-sync");
+var browserSync = require("browser-sync");
+var htmlInjector = require("./index");
 
-bs.use(require("./index"));
-
-bs({
-    server: true,
-    files: {
-        "plugin:html": "*.html"
-    }
+browserSync.use(htmlInjector, {
+    files: "test/fixtures/*.html",
+    excludedTags: ["BODY"]
 });
+browserSync({
+    logLevel: "debug",
+    server: "test/fixtures",
+    open: false
+});
+

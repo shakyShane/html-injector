@@ -1,9 +1,21 @@
-var _           = require("lodash");
-var jsdom       = require("jsdom").jsdom;
-var request     = require('request');
-var compare     = require('dom-compare-temp').compare;
+/**
+ *
+ * HTML Injector
+ *  - a BrowserSync.io plugin.
+ *
+ */
 
-var PLUGIN_NAME = "HTML Injector";
+var _            = require("lodash");
+var jsdom        = require("jsdom").jsdom;
+var request      = require('request');
+var tfunk        = require('tfunk');
+var merge        = require('opt-merger').merge;
+var compare      = require('dom-compare-temp').compare;
+
+var PLUGIN_NAME  = "HTML Injector";
+var PLUGIN_EVENT = "plugin:html:inject";
+var CLIENT_EVENT = "html:inject";
+var instance;
 
 /**
  * @module bs-html-injector.options
@@ -16,71 +28,96 @@ var defaults = {
      *
      * @property excludedTags
      * @type Array
-     * @default ["HTML", "HEAD", "BODY"]
+     * @default ["HTML", "HEAD"]
      */
-    excludedTags: ["HTML", "HEAD", "BODY"]
+    excludedTags: ["HTML", "HEAD"]
 };
 
-module.exports = {
+/**
+ * Main export, can be called when BrowserSync is running.
+ * @returns {*}
+ */
+module.exports = function () {
+    if (instance) {
+        return instance.events.emit(PLUGIN_EVENT);
+    }
+};
 
-    /**
-     * Plugin name
-     */
-    name: PLUGIN_NAME,
+/**
+ * Plugin name.
+ * @type {string}
+ */
+module.exports["plugin:name"] = PLUGIN_NAME;
 
-    /**
-     * Client JS hook
-     * @returns {*}
-     */
-    "client:js": function () {
-        return require("fs").readFileSync(__dirname + "/client.js");
-    },
+/**
+ * Client JS hook
+ * @returns {String}
+ */
+module.exports["client:js"] = function () {
+    return require("fs").readFileSync(__dirname + "/client.js", "utf-8");
+};
 
-    /**
-     * @param {BrowserSync} bs
-     * @param opts
-     */
-    plugin: function (bs, opts) {
+/**
+ * @param {BrowserSync} bs
+ * @param {Object} opts
+ * @param {Function} log
+ */
+module.exports["plugin"] = function (bs, opts, log) {
 
-        var url;
-        var sockets     = bs.io.sockets;
-        var inject      = getInjector(sockets, opts);
-        var oldDom;
+    instance = bs;
 
-        sockets.on("connection", function (client) {
+    opts = merge(defaults, opts, {});
 
-            client.on("client:url", function (data) {
+    var url;
+    var canFetchNew = true;
+    var sockets     = bs.io.sockets;
+    var inject      = getInjector(sockets, log);
+    var oldDom;
 
-                url = data.url;
-                request(url, function (error, response, body) {
-                    if (!error && response.statusCode == 200) {
-                        oldDom = createDom(body);
-                    }
-                });
+    sockets.on("connection", function (client) {
+
+        client.on("client:url", function (data) {
+
+            if (!canFetchNew) {
+                return;
+            }
+
+            url = data.url;
+
+            request(url, function (error, response, body) {
+                canFetchNew = false;
+                setTimeout(function () {
+                    canFetchNew = true;
+                }, 2000);
+                log("debug", "Stashing: " + url);
+                if (!error && response.statusCode == 200) {
+                    oldDom = createDom(body);
+                }
             });
         });
+    });
 
-        bs.events.on("file:changed", function (data) {
-            if (!url || !oldDom || data.namespace !== PLUGIN_NAME) {
-                return;
-            }
-            doNewRequest();
-        });
-
-        bs.events.on("plugin:html:inject", function () {
-            if (!url || !oldDom) {
-                return;
-            }
-            doNewRequest();
-        });
-
-        function doNewRequest() {
-            requestNew(url, oldDom, function (window, diffs, newDom) {
-                inject(window, diffs);
-                oldDom = newDom;
-            }, opts);
+    bs.events.on("file:changed", function (data) {
+        if (!url || !oldDom || data.namespace !== PLUGIN_NAME) {
+            return;
         }
+        doNewRequest();
+    });
 
+    bs.events.on(PLUGIN_EVENT, function () {
+        if (!url || !oldDom) {
+            return;
+        }
+        doNewRequest();
+    });
+
+    function doNewRequest() {
+        log("debug", "Getting new HTML from: " + url);
+        requestNew(url, oldDom, function (window, diffs, newDom) {
+            log("debug", "Differences found, injecting...");
+            inject(window, diffs);
+            oldDom = newDom;
+        }, opts);
     }
 };
 
@@ -137,8 +174,7 @@ function removeDupes(differences) {
 module.exports.removeDupes = removeDupes;
 
 /**
- * Because we replace the HTML of elements, differences of children are irrelevant
- * so we don't bother with them.
+ * Not currently used... needs work.
  * @param {Array} differences
  * @returns {Array}
  */
@@ -170,10 +206,10 @@ module.exports.stripDupes = removeDupes;
 
 
 /**
- * Compare two DOMS
+ * Compare two DOMS & return diffs
  * @param {Object} newDom
  * @param {Object} oldDom
- * @returns {*}
+ * @returns {Object}
  */
 function compareDoms(oldDom, newDom) {
 
@@ -209,12 +245,14 @@ function createDom(string) {
  * @param {Socket.io} sockets
  * @returns {Function}
  */
-function getInjector(sockets) {
+function getInjector(sockets, log) {
 
     return function (window, diffs) {
 
         diffs.forEach(function (item) {
 
+            log("debug", tfunk("%Ccyan:Tag: ") + item.tagName);
+            log("debug", tfunk("%Ccyan:Index: ") + item.index);
             var element = window.document.getElementsByTagName(item.tagName)[item.index];
 
             var elemAttrs = {};
@@ -225,7 +263,7 @@ function getInjector(sockets) {
             }
 
             if (element) {
-                sockets.emit("html:inject", {
+                sockets.emit(CLIENT_EVENT, {
                     html: element.innerHTML,
                     tagName: item.tagName,
                     index: item.index,
