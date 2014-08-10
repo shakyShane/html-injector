@@ -2,7 +2,7 @@
   "name": "html-injector",
   "version": "0.0.0",
   "description": "",
-  "main": "client.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
@@ -11,7 +11,8 @@
   "license": "ISC",
   "devDependencies": {
     "chai": "^1.9.1",
-    "mocha": "^1.21.4"
+    "mocha": "^1.21.4",
+    "multiline": "^0.3.4"
   },
   "dependencies": {
     "lodash": "^2.4.1",
