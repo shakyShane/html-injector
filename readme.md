@@ -1,5 +1,5 @@
-###bs-html-injector
-Inject HTML changes without reloading the browser. Requires an existing page with at a `<body>` tag.
+###HTML Injector [![Build Status](https://travis-ci.org/shakyShane/html-injector.svg?branch=master)](https://travis-ci.org/shakyShane/html-injector)
+[BrowserSync](http://www.browsersync.io/) plugin for injecting HTML changes without reloading the browser. Requires an existing page with a `<body>` tag.
 
 ##Install 
 
@@ -24,7 +24,7 @@ browserSync.use(htmlInjector, {
 
 // now run BrowserSync, watching CSS files as normal
 browserSync({
-  files: "skin/frontend/project/assets/css/*.css"
+  files: "app/styles/*.css"
 });
 ```
 
