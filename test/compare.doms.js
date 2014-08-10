@@ -1,11 +1,11 @@
 var compareDoms   = require("../index").compareDoms;
 var stripDupes    = require("../index").removeDupes;
 var stripExcluded = require("../index").removeExcluded;
-var jsdom       = require("jsdom").jsdom;
-var fs          = require("fs");
-var assert      = require("chai").assert;
-var _           = require("lodash");
-var multiline   = require("multiline");
+var jsdom         = require("jsdom").jsdom;
+var fs            = require("fs");
+var assert        = require("chai").assert;
+var _             = require("lodash");
+var multiline     = require("multiline");
 
 
 //var complex1         = fs.readFileSync(__dirname + "/fixtures/store-product.html", "utf-8");

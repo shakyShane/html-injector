@@ -4,7 +4,19 @@ var request     = require('request');
 
 var PLUGIN_NAME = "HTML Injector";
 
+/**
+ * @module bs-html-injector.options
+ * Default configuration. Everything here can be overridden
+ */
 var defaults = {
+    /**
+     *
+     * Define which tags are ignored by default.
+     *
+     * @property excludedTags
+     * @type Array
+     * @default ["HTML", "HEAD", "BODY"]
+     */
     excludedTags: ["HTML", "HEAD", "BODY"]
 };
 
