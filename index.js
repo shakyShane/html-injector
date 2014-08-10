@@ -1,6 +1,7 @@
 var _           = require("lodash");
 var jsdom       = require("jsdom").jsdom;
 var request     = require('request');
+var compare     = require('dom-compare-temp').compare;
 
 var PLUGIN_NAME = "HTML Injector";
 
@@ -177,7 +178,6 @@ module.exports.stripDupes = removeDupes;
 function compareDoms(oldDom, newDom) {
 
     var window      = newDom.parentWindow;
-    var compare = require('./node_modules/dom-compare').compare;
 
     var result = compare(oldDom, newDom, {
         formatFailure: function (failure, node) {
