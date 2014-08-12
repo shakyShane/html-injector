@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/shakyShane/html-injector.png?label=ready&title=Ready)](https://waffle.io/shakyShane/html-injector)
 ###HTML Injector [![Build Status](https://travis-ci.org/shakyShane/html-injector.svg?branch=master)](https://travis-ci.org/shakyShane/html-injector)
 [BrowserSync](http://www.browsersync.io/) plugin for injecting HTML changes without reloading the browser. Requires an existing page with a `<body>` tag.
 
