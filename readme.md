@@ -40,7 +40,7 @@ var htmlInjector = require("bs-html-injector");
  * Start BrowserSync
  */
 gulp.task("browser-sync", function () {
-    browserSync.use(htmlInjector);
+    browserSync.use(htmlInjector, {});
     browserSync({
         server: "test/fixtures"
     });
