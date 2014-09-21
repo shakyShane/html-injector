@@ -8,7 +8,6 @@
 var _            = require("lodash");
 var jsdom        = require("jsdom").jsdom;
 var request      = require('request');
-var tfunk        = require('tfunk');
 var merge        = require('opt-merger').merge;
 var compare      = require('dom-compare-temp').compare;
 
@@ -30,7 +29,11 @@ var defaults = {
      * @type Array
      * @default ["HTML", "HEAD"]
      */
-    excludedTags: ["HTML", "HEAD"]
+    excludedTags: ["HTML", "HEAD"],
+    /**
+     * Log Level (inherits from browserSync initially, but can be overridden)
+     */
+    logLevel: undefined
 };
 
 /**
@@ -53,25 +56,30 @@ module.exports["plugin:name"] = PLUGIN_NAME;
  * Client JS hook
  * @returns {String}
  */
-module.exports["client:js"] = function () {
-    return require("fs").readFileSync(__dirname + "/client.js", "utf-8");
+module.exports.hooks = {
+    "client:js": require("fs").readFileSync(__dirname + "/client.js", "utf-8")
 };
 
 /**
- * @param {BrowserSync} bs
  * @param {Object} opts
- * @param {Function} log
+ * @param {BrowserSync} bs
  */
-module.exports["plugin"] = function (bs, opts, log) {
+module.exports["plugin"] = function (opts, bs) {
 
     instance = bs;
 
     opts = merge(defaults, opts, {});
 
+    var logger = bs.getLogger(PLUGIN_NAME).info("Running...");
+
+    if (typeof opts.logLevel !== "undefined") {
+        logger.setLevel(opts.logLevel);
+    }
+
     var url;
     var canFetchNew = true;
     var sockets     = bs.io.sockets;
-    var inject      = getInjector(sockets, log);
+    var inject      = getInjector(sockets, logger);
     var oldDom;
 
     sockets.on("connection", function (client) {
@@ -89,7 +97,7 @@ module.exports["plugin"] = function (bs, opts, log) {
                 setTimeout(function () {
                     canFetchNew = true;
                 }, 2000);
-                log("debug", "Stashing: " + url);
+                logger.debug("Stashing: {magenta:%s", url);
                 if (!error && response.statusCode == 200) {
                     oldDom = createDom(body);
                 }
@@ -112,9 +120,9 @@ module.exports["plugin"] = function (bs, opts, log) {
     });
 
     function doNewRequest() {
-        log("debug", "Getting new HTML from: " + url);
+        logger.debug("Getting new HTML from: {magenta:%s", url);
         requestNew(url, oldDom, function (window, diffs, newDom) {
-            log("debug", "Differences found, injecting...");
+            logger.debug("Differences found, injecting...");
             inject(window, diffs);
             oldDom = newDom;
         }, opts);
@@ -150,7 +158,6 @@ function requestNew (url, oldDom, cb, opts) {
             var newDom = createDom(body);
             var diffs  = compareDoms(oldDom, newDom);
             diffs      = removeDupes(diffs);
-//            diffs      = removeChildren(diffs); // unreliable right now
             diffs      = removeExcluded(diffs, opts.excludedTags || defaults.excludedTags);
 
             if (diffs) {
@@ -245,14 +252,15 @@ function createDom(string) {
  * @param {Socket.io} sockets
  * @returns {Function}
  */
-function getInjector(sockets, log) {
+function getInjector(sockets, logger) {
 
     return function (window, diffs) {
 
         diffs.forEach(function (item) {
 
-            log("debug", tfunk("%Ccyan:Tag: ") + item.tagName);
-            log("debug", tfunk("%Ccyan:Index: ") + item.index);
+            logger.debug("{cyan:Tag: %s", item.tagName);
+            logger.debug("{cyan:Index: %s", item.index);
+
             var element = window.document.getElementsByTagName(item.tagName)[item.index];
 
             var elemAttrs = {};

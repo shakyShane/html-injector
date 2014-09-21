@@ -1,4 +1,7 @@
-;(function (window, socket) {
+
+;(function (window, bs) {
+
+    var socket = bs.socket;
 
     socket.on("connection", function () {
 
@@ -34,4 +37,4 @@
         }
     });
 
-})(window, window.___socket___);
+})(window, window.___browserSync___);
