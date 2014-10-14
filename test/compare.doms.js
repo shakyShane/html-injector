@@ -7,12 +7,6 @@ var assert        = require("chai").assert;
 var _             = require("lodash");
 var multiline     = require("multiline");
 
-
-//var complex1         = fs.readFileSync(__dirname + "/fixtures/store-product.html", "utf-8");
-//var complex1Modified = fs.readFileSync(__dirname + "/fixtures/store-product-alt.html", "utf-8");
-//var complex2         = fs.readFileSync(__dirname + "/fixtures/web-starter-kit-styleguide.html", "utf-8");
-//var complex2Modified = fs.readFileSync(__dirname + "/fixtures/web-starter-kit-styleguide-modified.html", "utf-8");
-
 describe("Comparing Simple doms", function(){
 
     it("returns element index when it has different children", function(){
