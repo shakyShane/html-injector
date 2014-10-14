@@ -15,6 +15,19 @@ var PLUGIN_NAME  = "HTML Injector";
 var PLUGIN_EVENT = "plugin:html:inject";
 var CLIENT_EVENT = "html:inject";
 
+/**
+ *
+ * ON/OFF flag
+ * @type {boolean}
+ *
+ */
+var enabled = true;
+
+/**
+ *
+ *
+ *
+ */
 var instance;
 
 /**
@@ -74,6 +87,10 @@ module.exports["plugin"] = function (opts, bs) {
 
     var logger = bs.getLogger(PLUGIN_NAME).info("Running...");
 
+    bs.events.on("plugins:configure", function (data) {
+        enabled = data.active;
+    });
+
     if (typeof opts.logLevel !== "undefined") {
         logger.setLevel(opts.logLevel);
     }
@@ -122,6 +139,7 @@ module.exports["plugin"] = function (opts, bs) {
     });
 
     function doNewRequest() {
+
         logger.debug("Getting new HTML from: {magenta:%s", url);
         requestNew(url, oldDom, function (window, diffs, newDom) {
             logger.debug("Differences found, injecting...");
