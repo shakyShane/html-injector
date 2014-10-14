@@ -14,6 +14,7 @@ var compare      = require('dom-compare-temp').compare;
 var PLUGIN_NAME  = "HTML Injector";
 var PLUGIN_EVENT = "plugin:html:inject";
 var CLIENT_EVENT = "html:inject";
+
 var instance;
 
 /**
@@ -67,8 +68,9 @@ module.exports.hooks = {
 module.exports["plugin"] = function (opts, bs) {
 
     instance = bs;
+    opts     = opts || {};
 
-    opts = merge(defaults, opts, {});
+    opts     = merge(defaults, opts, true, {});
 
     var logger = bs.getLogger(PLUGIN_NAME).info("Running...");
 

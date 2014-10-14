@@ -16,6 +16,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "browser-sync": "^1.5.8",
     "chai": "^1.9.1",
     "mocha": "^1.21.4",
     "multiline": "^0.3.4"
