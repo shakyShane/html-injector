@@ -22,12 +22,10 @@
     "multiline": "^0.3.4"
   },
   "dependencies": {
-    "connect": "^3.1.0",
     "dom-compare-temp": "0.0.1",
     "jsdom": "^0.11.1",
     "lodash": "^2.4.1",
     "opt-merger": "^0.2.1",
-    "request": "^2.40.0",
-    "tfunk": "0.0.2"
+    "request": "^2.40.0"
   }
 }
