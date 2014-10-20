@@ -25,7 +25,7 @@ var enabled = true;
 
 /**
  *
- *
+ * Instance of HTML Injector
  *
  */
 var instance;
@@ -88,6 +88,14 @@ module.exports["plugin"] = function (opts, bs) {
     var logger = bs.getLogger(PLUGIN_NAME).info("Running...");
 
     bs.events.on("plugins:configure", function (data) {
+        var msg = "{cyan:Enabled";
+
+        if (!data.active) {
+            msg = "{yellow:Disabled";
+        }
+
+        logger.info(msg);
+
         enabled = data.active;
     });
 
@@ -140,7 +148,12 @@ module.exports["plugin"] = function (opts, bs) {
 
     function doNewRequest() {
 
+        if (!enabled) {
+            return;
+        }
+
         logger.debug("Getting new HTML from: {magenta:%s", url);
+
         requestNew(url, oldDom, function (window, diffs, newDom) {
             logger.debug("Differences found, injecting...");
             inject(window, diffs);
