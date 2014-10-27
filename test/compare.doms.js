@@ -1,4 +1,4 @@
-var compareDoms   = require("../index").compareDoms;
+var compareDoms   = require("../lib/injector").compareDoms;
 var stripDupes    = require("../index").removeDupes;
 var stripExcluded = require("../index").removeExcluded;
 var jsdom         = require("jsdom").jsdom;

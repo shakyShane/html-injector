@@ -19,7 +19,8 @@
     "browser-sync": "^1.5.8",
     "chai": "^1.9.1",
     "mocha": "^1.21.4",
-    "multiline": "^0.3.4"
+    "multiline": "^0.3.4",
+    "socket.io-client": "^1.1.0"
   },
   "dependencies": {
     "dom-compare-temp": "0.0.1",

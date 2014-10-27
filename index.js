@@ -6,27 +6,23 @@
  */
 
 var _            = require("lodash");
-var jsdom        = require("jsdom").jsdom;
 var request      = require('request');
 var merge        = require('opt-merger').merge;
-var compare      = require('dom-compare-temp').compare;
 
-var PLUGIN_NAME  = "HTML Injector";
-var PLUGIN_EVENT = "plugin:html:inject";
-var CLIENT_EVENT = "html:inject";
+var compareDoms  = require("./lib/injector").compareDoms;
+var getInjector  = require("./lib/injector").getInjector;
+var createDom    = require("./lib/injector").createDom;
+
+var config       = require("./lib/config");
 
 /**
- *
  * ON/OFF flag
  * @type {boolean}
- *
  */
 var enabled = true;
 
 /**
- *
  * Instance of HTML Injector
- *
  */
 var instance;
 
@@ -47,7 +43,12 @@ var defaults = {
     /**
      * Log Level (inherits from browserSync initially, but can be overridden)
      */
-    logLevel: undefined
+    logLevel: undefined,
+    /**
+     * Handoff - when plugin is disabled, should the file-watching be handed
+     * off to core?
+     */
+    handoff: true
 };
 
 /**
@@ -56,22 +57,8 @@ var defaults = {
  */
 module.exports = function () {
     if (instance) {
-        return instance.events.emit(PLUGIN_EVENT);
+        return instance.events.emit(config.PLUGIN_EVENT);
     }
-};
-
-/**
- * Plugin name.
- * @type {string}
- */
-module.exports["plugin:name"] = PLUGIN_NAME;
-
-/**
- * Client JS hook
- * @returns {String}
- */
-module.exports.hooks = {
-    "client:js": require("fs").readFileSync(__dirname + "/client.js", "utf-8")
 };
 
 /**
@@ -85,19 +72,7 @@ module.exports["plugin"] = function (opts, bs) {
 
     opts     = merge(defaults, opts, true, {});
 
-    var logger = bs.getLogger(PLUGIN_NAME).info("Running...");
-
-    bs.events.on("plugins:configure", function (data) {
-        var msg = "{cyan:Enabled";
-
-        if (!data.active) {
-            msg = "{yellow:Disabled";
-        }
-
-        logger.info(msg);
-
-        enabled = data.active;
-    });
+    var logger = bs.getLogger(config.PLUGIN_NAME).info("Running...");
 
     if (typeof opts.logLevel !== "undefined") {
         logger.setLevel(opts.logLevel);
@@ -109,11 +84,13 @@ module.exports["plugin"] = function (opts, bs) {
     var inject      = getInjector(sockets, logger);
     var oldDom;
 
+    bs.events.on("plugins:configure", configurePlugin.bind(null, sockets, logger));
+
     sockets.on("connection", function (client) {
 
         client.on("client:url", function (data) {
 
-            if (!canFetchNew) {
+            if (!canFetchNew || !enabled) {
                 return;
             }
 
@@ -133,13 +110,19 @@ module.exports["plugin"] = function (opts, bs) {
     });
 
     bs.events.on("file:changed", function (data) {
-        if (!url || !oldDom || data.namespace !== PLUGIN_NAME) {
+        if (!enabled && opts.handoff && data._origin !== config.PLUGIN_NAME) {
+            data.namespace = "core";
+            data._origin = config.PLUGIN_NAME;
+            bs.events.emit("file:changed", data);
+            return;
+        }
+        if (!url || !oldDom || data.namespace !== config.PLUGIN_NAME) {
             return;
         }
         doNewRequest();
     });
 
-    bs.events.on(PLUGIN_EVENT, function () {
+    bs.events.on(config.PLUGIN_EVENT, function () {
         if (!url || !oldDom) {
             return;
         }
@@ -168,7 +151,7 @@ module.exports["plugin"] = function (opts, bs) {
  * @returns {*}
  */
 function removeExcluded(diffs, excludeList) {
-    return diffs.filter(function (item) {
+    return _.filter(diffs, function (item) {
         return !_.contains(excludeList, item.tagName);
     });
 }
@@ -200,6 +183,27 @@ function requestNew (url, oldDom, cb, opts) {
             oldDom = newDom;
         }
     });
+}
+
+/**
+ * Reload browsers
+ * @param sockets
+ * @param logger
+ * @param data
+ */
+function configurePlugin (sockets, logger, data) {
+
+    var msg = "{cyan:Enabled";
+
+    if (!data.active) {
+        msg = "{yellow:Disabled";
+    } else {
+        sockets.emit("browser:reload");
+    }
+
+    logger.info(msg);
+
+    enabled = data.active;
 }
 
 /**
@@ -242,76 +246,17 @@ function removeChildren(differences) {
     return parents;
 }
 
-module.exports.stripDupes = removeDupes;
-
+/**
+ * Client JS hook
+ * @returns {String}
+ */
+module.exports.hooks = {
+    "client:js": require("fs").readFileSync(__dirname + "/client.js", "utf-8")
+};
 
 /**
- * Compare two DOMS & return diffs
- * @param {Object} newDom
- * @param {Object} oldDom
- * @returns {Object}
+ * Plugin name.
+ * @type {string}
  */
-function compareDoms(oldDom, newDom) {
+module.exports["plugin:name"] = config.PLUGIN_NAME;
 
-    var window      = newDom.parentWindow;
-
-    var result = compare(oldDom, newDom, {
-        formatFailure: function (failure, node) {
-            var allElems    = node.ownerDocument.getElementsByTagName(node.nodeName);
-            failure.index   = Array.prototype.indexOf.call(allElems, node);
-            failure.tagName = node.nodeName;
-            return failure;
-        }
-    });
-
-    var same = result.getResult(); // false cause' trees are different
-
-    if (!same) {
-        return result.getDifferences(); // array of diff-objects
-    }
-}
-
-module.exports.compareDoms = compareDoms;
-
-/**
- * @param string
- * @returns {*}
- */
-function createDom(string) {
-    return jsdom(string);
-}
-
-/**
- * @param {Socket.io} sockets
- * @returns {Function}
- */
-function getInjector(sockets, logger) {
-
-    return function (window, diffs) {
-
-        diffs.forEach(function (item) {
-
-            logger.debug("{cyan:Tag: %s", item.tagName);
-            logger.debug("{cyan:Index: %s", item.index);
-
-            var element = window.document.getElementsByTagName(item.tagName)[item.index];
-
-            var elemAttrs = {};
-
-            for (var attr, i=0, attrs=element.attributes, l=attrs.length; i<l; i++){
-                attr = attrs.item(i);
-                elemAttrs[attr.nodeName] = attr.nodeValue
-            }
-
-            if (element) {
-                sockets.emit(CLIENT_EVENT, {
-                    html: element.innerHTML,
-                    tagName: item.tagName,
-                    index: item.index,
-                    cssText: element.style.cssText,
-                    attrs: elemAttrs
-                });
-            }
-        });
-    }
-}
