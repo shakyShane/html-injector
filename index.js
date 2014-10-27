@@ -5,15 +5,18 @@
  *
  */
 
+var events       = require('events');
+var emitter      = new events.EventEmitter();
 var _            = require("lodash");
 var request      = require('request');
-var merge        = require('opt-merger').merge;
 
 var compareDoms  = require("./lib/injector").compareDoms;
 var getInjector  = require("./lib/injector").getInjector;
 var createDom    = require("./lib/injector").createDom;
 
+var HtmlInjector = require("./lib/html-injector");
 var config       = require("./lib/config");
+var utils        = require("./lib/utils");
 
 /**
  * ON/OFF flag
@@ -27,37 +30,12 @@ var enabled = true;
 var instance;
 
 /**
- * @module bs-html-injector.options
- * Default configuration. Everything here can be overridden
- */
-var defaults = {
-    /**
-     *
-     * Define which tags are ignored by default.
-     *
-     * @property excludedTags
-     * @type Array
-     * @default ["HTML", "HEAD"]
-     */
-    excludedTags: ["HTML", "HEAD"],
-    /**
-     * Log Level (inherits from browserSync initially, but can be overridden)
-     */
-    logLevel: undefined,
-    /**
-     * Handoff - when plugin is disabled, should the file-watching be handed
-     * off to core?
-     */
-    handoff: true
-};
-
-/**
  * Main export, can be called when BrowserSync is running.
  * @returns {*}
  */
 module.exports = function () {
     if (instance) {
-        return instance.events.emit(config.PLUGIN_EVENT);
+        return emitter.emit(config.PLUGIN_EVENT);
     }
 };
 
@@ -67,67 +45,80 @@ module.exports = function () {
  */
 module.exports["plugin"] = function (opts, bs) {
 
-    instance = bs;
-    opts     = opts || {};
+    var htmlInjector = instance = new HtmlInjector(opts, bs);
 
-    opts     = merge(defaults, opts, true, {});
+    var url, oldDom;
+    var canFetchNew = true;
+    var opts        = htmlInjector.opts;
+    var logger      = htmlInjector.logger;
+    var inject      = getInjector(htmlInjector.sockets, logger);
 
-    var logger = bs.getLogger(config.PLUGIN_NAME).info("Running...");
+    /**
+     * Configure event
+     */
+    bs.events.on("plugins:configure", configurePlugin.bind(null, htmlInjector.sockets, logger));
 
-    if (typeof opts.logLevel !== "undefined") {
-        logger.setLevel(opts.logLevel);
+    /**
+     * File changed event
+     */
+    bs.events.on("file:changed", fileChangedEvent);
+
+    /**
+     * Internal event
+     */
+    emitter.on(config.PLUGIN_EVENT, pluginEvent);
+
+    /**
+     * Socket Connection event
+     */
+    htmlInjector.sockets.on("connection", handleSocketConnection);
+
+    /**
+     * Catch the above ^
+     */
+    function handleSocketConnection (client) {
+        client.on("client:url", handleUrlEvent);
     }
 
-    var url;
-    var canFetchNew = true;
-    var sockets     = bs.io.sockets;
-    var inject      = getInjector(sockets, logger);
-    var oldDom;
-
-    bs.events.on("plugins:configure", configurePlugin.bind(null, sockets, logger));
-
-    sockets.on("connection", function (client) {
-
-        client.on("client:url", function (data) {
-
-            if (!canFetchNew || !enabled) {
-                return;
+    /**
+     * @param data
+     */
+    function handleUrlEvent (data) {
+        if (!canFetchNew || !enabled) {
+            return;
+        }
+        url = data.url;
+        request(url, function (error, response, body) {
+            canFetchNew = false;
+            setTimeout(function () {
+                canFetchNew = true;
+            }, 2000);
+            logger.debug("Stashing: {magenta:%s", url);
+            if (!error && response.statusCode == 200) {
+                oldDom = createDom(body);
             }
-
-            url = data.url;
-
-            request(url, function (error, response, body) {
-                canFetchNew = false;
-                setTimeout(function () {
-                    canFetchNew = true;
-                }, 2000);
-                logger.debug("Stashing: {magenta:%s", url);
-                if (!error && response.statusCode == 200) {
-                    oldDom = createDom(body);
-                }
-            });
         });
-    });
+    }
 
-    bs.events.on("file:changed", function (data) {
+    function fileChangedEvent (data) {
         if (!enabled && opts.handoff && data._origin !== config.PLUGIN_NAME) {
             data.namespace = "core";
             data._origin = config.PLUGIN_NAME;
-            bs.events.emit("file:changed", data);
+            htmlInjector.events.emit("file:changed", data);
             return;
         }
         if (!url || !oldDom || data.namespace !== config.PLUGIN_NAME) {
             return;
         }
         doNewRequest();
-    });
+    }
 
-    bs.events.on(config.PLUGIN_EVENT, function () {
+    function pluginEvent () {
         if (!url || !oldDom) {
             return;
         }
         doNewRequest();
-    });
+    }
 
     function doNewRequest() {
 
@@ -146,19 +137,6 @@ module.exports["plugin"] = function (opts, bs) {
 };
 
 /**
- * @param diffs
- * @param excludeList
- * @returns {*}
- */
-function removeExcluded(diffs, excludeList) {
-    return _.filter(diffs, function (item) {
-        return !_.contains(excludeList, item.tagName);
-    });
-}
-
-module.exports.removeExcluded = removeExcluded;
-
-/**
  * Request new version of Dom
  * @param {String} url
  * @param {Object} oldDom
@@ -173,8 +151,8 @@ function requestNew (url, oldDom, cb, opts) {
 
             var newDom = createDom(body);
             var diffs  = compareDoms(oldDom, newDom);
-            diffs      = removeDupes(diffs);
-            diffs      = removeExcluded(diffs, opts.excludedTags || defaults.excludedTags);
+            diffs      = utils.removeDupes(diffs);
+            diffs      = utils.removeExcluded(diffs, opts.excludedTags || defaults.excludedTags);
 
             if (diffs) {
                 cb(newDom.parentWindow, diffs, newDom);
@@ -204,46 +182,6 @@ function configurePlugin (sockets, logger, data) {
     logger.info(msg);
 
     enabled = data.active;
-}
-
-/**
- * @param {Array} differences
- * @returns {Array}
- */
-function removeDupes(differences) {
-
-    return _.uniq(differences, "node");
-}
-
-module.exports.removeDupes = removeDupes;
-
-/**
- * Not currently used... needs work.
- * @param {Array} differences
- * @returns {Array}
- */
-function removeChildren(differences) {
-
-    differences.reverse();
-
-    var parents = [];
-
-    differences.forEach(function (item, index) {
-
-        var path = item.node;
-
-        if (index === 0) {
-            return parents.push(item);
-        }
-
-        parents.forEach(function (parentItem) {
-            if (!_.contains(path, parentItem.node)) {
-                return parents.push(item);
-            }
-        });
-    });
-
-    return parents;
 }
 
 /**
