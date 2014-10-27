@@ -128,40 +128,37 @@ module.exports["plugin"] = function (opts, bs) {
 
         logger.debug("Getting new HTML from: {magenta:%s", url);
 
-        requestNew(url, oldDom, function (window, diffs, newDom) {
-            logger.debug("Differences found, injecting...");
-            inject(window, diffs);
-            oldDom = newDom;
-        }, opts);
+        requestNew(url, opts);
+    }
+    /**
+     * Request new version of Dom
+     * @param {String} url
+     * @param {Object} oldDom
+     * @param {Object} opts - plugin options
+     * @param {Function} cb
+     */
+    function requestNew (url, opts) {
+
+        request(url, function (error, response, body) {
+
+            if (!error && response.statusCode == 200) {
+
+                var newDom = createDom(body);
+                var diffs  = compareDoms(oldDom, newDom);
+
+                diffs      = utils.removeDupes(diffs);
+                diffs      = utils.removeExcluded(diffs, opts.excludedTags);
+
+                if (diffs) {
+                    oldDom = newDom;
+                    logger.debug("Differences found, injecting...");
+                    inject(newDom.parentWindow, diffs);
+                }
+            }
+        });
     }
 };
 
-/**
- * Request new version of Dom
- * @param {String} url
- * @param {Object} oldDom
- * @param {Object} opts - plugin options
- * @param {Function} cb
- */
-function requestNew (url, oldDom, cb, opts) {
-
-    request(url, function (error, response, body) {
-
-        if (!error && response.statusCode == 200) {
-
-            var newDom = createDom(body);
-            var diffs  = compareDoms(oldDom, newDom);
-            diffs      = utils.removeDupes(diffs);
-            diffs      = utils.removeExcluded(diffs, opts.excludedTags || defaults.excludedTags);
-
-            if (diffs) {
-                cb(newDom.parentWindow, diffs, newDom);
-            }
-
-            oldDom = newDom;
-        }
-    });
-}
 
 /**
  * Reload browsers
