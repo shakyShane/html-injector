@@ -168,6 +168,10 @@ module.exports["plugin"] = function (opts, bs) {
  */
 function configurePlugin (sockets, logger, data) {
 
+    if (data.name !== config.PLUGIN_NAME) {
+        return;
+    }
+
     var msg = "{cyan:Enabled";
 
     if (!data.active) {
