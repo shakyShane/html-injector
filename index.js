@@ -47,11 +47,12 @@ module.exports["plugin"] = function (opts, bs) {
 
     var htmlInjector = instance = new HtmlInjector(opts, bs);
 
-    var url, oldDom;
+    var currentUrl, oldDom;
     var canFetchNew = true;
     var opts        = htmlInjector.opts;
     var logger      = htmlInjector.logger;
     var inject      = getInjector(htmlInjector.sockets, logger);
+    var latest;
 
     /**
      * Configure event
@@ -87,13 +88,13 @@ module.exports["plugin"] = function (opts, bs) {
         if (!canFetchNew || !enabled) {
             return;
         }
-        url = data.url;
-        request(url, function (error, response, body) {
+        currentUrl = data.url;
+        request(currentUrl, function (error, response, body) {
             canFetchNew = false;
             setTimeout(function () {
                 canFetchNew = true;
             }, 2000);
-            logger.debug("Stashing: {magenta:%s", url);
+            logger.debug("Stashing: {magenta:%s", currentUrl);
             if (!error && response.statusCode == 200) {
                 oldDom = createDom(body);
             }
@@ -107,14 +108,14 @@ module.exports["plugin"] = function (opts, bs) {
             htmlInjector.events.emit("file:changed", data);
             return;
         }
-        if (!url || !oldDom || data.namespace !== config.PLUGIN_NAME) {
+        if (!currentUrl || !oldDom || data.namespace !== config.PLUGIN_NAME) {
             return;
         }
         doNewRequest();
     }
 
     function pluginEvent () {
-        if (!url || !oldDom) {
+        if (!currentUrl || !oldDom) {
             return;
         }
         doNewRequest();
@@ -126,16 +127,14 @@ module.exports["plugin"] = function (opts, bs) {
             return;
         }
 
-        logger.debug("Getting new HTML from: {magenta:%s", url);
+        logger.debug("Getting new HTML from: {magenta:%s", currentUrl);
 
-        requestNew(url, opts);
+        requestNew(currentUrl, opts);
     }
     /**
      * Request new version of Dom
      * @param {String} url
-     * @param {Object} oldDom
      * @param {Object} opts - plugin options
-     * @param {Function} cb
      */
     function requestNew (url, opts) {
 
@@ -144,21 +143,36 @@ module.exports["plugin"] = function (opts, bs) {
             if (!error && response.statusCode == 200) {
 
                 var newDom = createDom(body);
-                var diffs  = compareDoms(oldDom, newDom);
-
-                diffs      = utils.removeDupes(diffs);
-                diffs      = utils.removeExcluded(diffs, opts.excludedTags);
+                var diffs  = getDiffs(newDom, oldDom, opts);
 
                 if (diffs) {
-                    oldDom = newDom;
+                    logger.setOnce("useLevelPrefixes", true).warn("Setting new comparison");
                     logger.debug("Differences found, injecting...");
                     inject(newDom.parentWindow, diffs);
+                    handleUrlEvent({url: currentUrl});
                 }
             }
         });
     }
 };
 
+/**
+ * @param newDom
+ * @param oldDomObject
+ * @param opts
+ * @returns {*}
+ */
+function getDiffs(newDom, oldDomObject, opts) {
+
+    var diffs  = compareDoms(oldDomObject, newDom);
+    console.log(diffs);
+    diffs      = utils.removeDupes(diffs);
+    diffs      = utils.removeExcluded(diffs, opts.excludedTags);
+
+    return diffs;
+}
+
+module.exports.getDiffs = getDiffs;
 
 /**
  * Reload browsers

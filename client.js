@@ -18,23 +18,42 @@
 
         if (elem) {
 
-            elem.innerHTML     = data.html;
+            switch (data.diffType) {
 
-            var attrs = elem.attributes;
-            var name;
-            var index;
+                case "attr":
+                    updateAttrs(elem, data.attrs);
+                    break;
+                default:
+                    updateElemHtml(elem, data.html);
+                    break;
 
-            // Remove all attributes from element
-            for (index = attrs.length - 1; index >= 0; --index) {
-                name = attrs[index].nodeName;
-                elem.removeAttribute(name);
-            }
-
-            // Add new ones
-            for (var key in data.attrs) {
-                elem.setAttribute(key, data.attrs[key]);
             }
         }
     });
+
+    function updateElemHtml (elem, html) {
+        elem.innerHTML     = html;
+    }
+
+    function updateText (elem, text) {
+        elem.innerText = text;
+    }
+
+    function updateAttrs (elem, newAttrs) {
+        var oldAttrs = elem.attributes;
+        var name;
+        var index;
+
+        // Remove all attributes from element
+        for (index = oldAttrs.length - 1; index >= 0; --index) {
+            name = oldAttrs[index].nodeName;
+            elem.removeAttribute(name);
+        }
+
+        // Add new ones
+        for (var key in newAttrs) {
+            elem.setAttribute(key, newAttrs[key]);
+        }
+    }
 
 })(window, window.___browserSync___);
