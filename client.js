@@ -12,16 +12,20 @@
 
     socket.on("html:inject", function (data) {
 
+        if (data.url !== location.href) {
+            return;
+        }
+
         var elems = document.getElementsByTagName(data.tagName);
 
         var elem = elems[data.index];
 
         if (elem) {
 
-            switch (data.diffType) {
+            switch (data.diff.type) {
 
-                case "attr":
-                    updateAttrs(elem, data.attrs);
+                case "attribute":
+                    updateAttrs(elem, data);
                     break;
                 default:
                     updateElemHtml(elem, data.html);
@@ -39,20 +43,35 @@
         elem.innerText = text;
     }
 
-    function updateAttrs (elem, newAttrs) {
+    function updateAttrs (elem, data) {
+
         var oldAttrs = elem.attributes;
         var name;
         var index;
 
-        // Remove all attributes from element
+        // Remove any ol attrs that don't exist on new element
         for (index = oldAttrs.length - 1; index >= 0; --index) {
             name = oldAttrs[index].nodeName;
-            elem.removeAttribute(name);
+            if (!data.attrs[name]) {
+                elem.removeAttribute(name);
+            }
         }
 
-        // Add new ones
-        for (var key in newAttrs) {
-            elem.setAttribute(key, newAttrs[key]);
+        /**
+         * Compare
+         */
+        for (var key in data.attrs) {
+
+            if (oldAttrs[key]) { // existing attr
+
+                if (oldAttrs[key] !== data.attrs[key]) {
+                    elem.setAttribute(key, data.attrs[key]);
+                }
+            }
+
+            if (!oldAttrs[key])  {
+                elem.setAttribute(key, data.attrs[key]);
+            }
         }
     }
 

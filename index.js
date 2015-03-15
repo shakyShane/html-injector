@@ -148,7 +148,7 @@ module.exports["plugin"] = function (opts, bs) {
                 if (diffs) {
                     logger.setOnce("useLevelPrefixes", true).warn("Setting new comparison");
                     logger.debug("Differences found, injecting...");
-                    inject(newDom.parentWindow, diffs);
+                    inject(newDom.parentWindow, diffs, currentUrl);
                     handleUrlEvent({url: currentUrl});
                 }
             }
@@ -165,7 +165,6 @@ module.exports["plugin"] = function (opts, bs) {
 function getDiffs(newDom, oldDomObject, opts) {
 
     var diffs  = compareDoms(oldDomObject, newDom);
-    console.log(diffs);
     diffs      = utils.removeDupes(diffs);
     diffs      = utils.removeExcluded(diffs, opts.excludedTags);
 

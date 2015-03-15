@@ -3,7 +3,7 @@ var htmlInjector = require("./index");
 
 browserSync.use(htmlInjector, {
     files: "test/fixtures/*.html",
-    excludedTags: ["BODY"],
+    //excludedTags: ["BODY"],
     logLevel: "debug"
 });
 
