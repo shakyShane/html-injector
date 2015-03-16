@@ -4,7 +4,7 @@ var htmlInjector = require("./index");
 browserSync.use(htmlInjector, {
     files: "test/fixtures/*.html",
     //excludedTags: ["BODY"],
-    logLevel: "debug"
+    //logLevel: "debug"
 });
 
 browserSync({

@@ -6,13 +6,13 @@
     socket.on("connection", function () {
 
         socket.emit("client:url", {
-            url: window.location.href
+            url: getUrl()
         });
     });
 
     socket.on("html:inject", function (data) {
 
-        if (data.url !== location.href) {
+        if (data.url !== getUrl()) {
             return;
         }
 
@@ -73,6 +73,10 @@
                 elem.setAttribute(key, data.attrs[key]);
             }
         }
+    }
+
+    function getUrl () {
+        return [location.protocol, "//", location.host, location.pathname, location.search].join("");
     }
 
 })(window, window.___browserSync___);

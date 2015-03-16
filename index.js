@@ -47,7 +47,6 @@ module.exports["plugin"] = function (opts, bs) {
 
     var htmlInjector = instance = new HtmlInjector(opts, bs);
 
-    var currentUrl, oldDom;
     var opts        = htmlInjector.opts;
     var logger      = htmlInjector.logger;
     var inject      = getInjector(htmlInjector.sockets, logger);
@@ -135,7 +134,19 @@ module.exports["plugin"] = function (opts, bs) {
      */
     function requestNew (opts) {
 
+        // Remove any
+        var valid = bs.io.of(bs.options.getIn(["socket", "namespace"])).sockets.map(function (client) {
+            return client.handshake.headers.referer;
+        });
+
+        logger.debug("Cache items: {yellow:%s", Object.keys(htmlInjector.cache).length);
+
         Object.keys(htmlInjector.cache).forEach(function (url) {
+
+            if (valid.indexOf(url) === -1) {
+                delete htmlInjector.cache[url];
+                return;
+            }
 
             request(url, function (error, response, body) {
 
