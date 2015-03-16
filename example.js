@@ -9,5 +9,6 @@ browserSync.use(htmlInjector, {
 
 browserSync({
     server: "test/fixtures",
+    files: "test/fixtures/css/**",
     open: false
 });

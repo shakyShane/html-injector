@@ -90,10 +90,11 @@ module.exports["plugin"] = function (opts, bs) {
 
         request(data.url, function (error, response, body) {
 
-            logger.debug("Stashing: {magenta:%s", currentUrl);
+            logger.debug("Stashing: {magenta:%s", data.url);
 
             if (!error && response.statusCode == 200) {
-                htmlInjector.cache[data.url] = createDom(body);
+                var page = createDom(body);
+                htmlInjector.cache[data.url] = page;
             }
         });
     }
@@ -123,7 +124,7 @@ module.exports["plugin"] = function (opts, bs) {
             return;
         }
 
-        logger.debug("Getting new HTML from: {magenta:%s", currentUrl);
+        logger.debug("Getting new HTML from: {magenta:%s} urls", Object.keys(htmlInjector.cache).length);
 
         requestNew(opts);
     }
@@ -143,7 +144,7 @@ module.exports["plugin"] = function (opts, bs) {
                     var newDom = createDom(body);
                     var diffs  = getDiffs(newDom, htmlInjector.cache[url], opts);
 
-                    if (diffs) {
+                    if (diffs.length) {
                         inject(newDom.parentWindow, diffs, url);
                         htmlInjector.cache[url] = createDom(body);
                     }
