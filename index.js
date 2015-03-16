@@ -48,11 +48,9 @@ module.exports["plugin"] = function (opts, bs) {
     var htmlInjector = instance = new HtmlInjector(opts, bs);
 
     var currentUrl, oldDom;
-    var canFetchNew = true;
     var opts        = htmlInjector.opts;
     var logger      = htmlInjector.logger;
     var inject      = getInjector(htmlInjector.sockets, logger);
-    var latest;
 
     /**
      * Configure event
@@ -85,37 +83,35 @@ module.exports["plugin"] = function (opts, bs) {
      * @param data
      */
     function handleUrlEvent (data) {
-        if (!canFetchNew || !enabled) {
+
+        if (!enabled) {
             return;
         }
-        currentUrl = data.url;
-        request(currentUrl, function (error, response, body) {
-            canFetchNew = false;
-            setTimeout(function () {
-                canFetchNew = true;
-            }, 2000);
+
+        request(data.url, function (error, response, body) {
+
             logger.debug("Stashing: {magenta:%s", currentUrl);
+
             if (!error && response.statusCode == 200) {
-                oldDom = createDom(body);
+                htmlInjector.cache[data.url] = createDom(body);
             }
         });
     }
 
     function fileChangedEvent (data) {
+
         if (!enabled && opts.handoff && data._origin !== config.PLUGIN_NAME) {
             data.namespace = "core";
             data._origin = config.PLUGIN_NAME;
             htmlInjector.events.emit("file:changed", data);
             return;
         }
-        if (!currentUrl || !oldDom || data.namespace !== config.PLUGIN_NAME) {
-            return;
-        }
-        doNewRequest();
+
+        requestNew({});
     }
 
     function pluginEvent () {
-        if (!currentUrl || !oldDom) {
+        if (!htmlInjector.hasCached()) {
             return;
         }
         doNewRequest();
@@ -123,35 +119,36 @@ module.exports["plugin"] = function (opts, bs) {
 
     function doNewRequest() {
 
-        if (!enabled) {
+        if (!enabled || !htmlInjector.hasCached()) {
             return;
         }
 
         logger.debug("Getting new HTML from: {magenta:%s", currentUrl);
 
-        requestNew(currentUrl, opts);
+        requestNew(opts);
     }
     /**
      * Request new version of Dom
      * @param {String} url
      * @param {Object} opts - plugin options
      */
-    function requestNew (url, opts) {
+    function requestNew (opts) {
 
-        request(url, function (error, response, body) {
+        Object.keys(htmlInjector.cache).forEach(function (url) {
 
-            if (!error && response.statusCode == 200) {
+            request(url, function (error, response, body) {
 
-                var newDom = createDom(body);
-                var diffs  = getDiffs(newDom, oldDom, opts);
+                if (!error && response.statusCode == 200) {
 
-                if (diffs) {
-                    logger.setOnce("useLevelPrefixes", true).warn("Setting new comparison");
-                    logger.debug("Differences found, injecting...");
-                    inject(newDom.parentWindow, diffs, currentUrl);
-                    handleUrlEvent({url: currentUrl});
+                    var newDom = createDom(body);
+                    var diffs  = getDiffs(newDom, htmlInjector.cache[url], opts);
+
+                    if (diffs) {
+                        inject(newDom.parentWindow, diffs, url);
+                        htmlInjector.cache[url] = createDom(body);
+                    }
                 }
-            }
+            });
         });
     }
 };
