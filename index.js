@@ -51,6 +51,8 @@ module.exports["plugin"] = function (opts, bs) {
     var logger      = htmlInjector.logger;
     var inject      = getInjector(htmlInjector.sockets, logger);
 
+    enabled = opts.enabled;
+
     /**
      * Configure event
      */
