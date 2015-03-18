@@ -1,8 +1,7 @@
-var compareDoms   = require("../lib/injector").compareDoms;
-var stripDupes    = require("../lib/utils").removeDupes;
-var stripExcluded = require("../lib/utils").removeExcluded;
+var createDom     = require("../lib/injector").createDom;
 var jsdom         = require("jsdom").jsdom;
 var assert        = require("chai").assert;
+var htmlInjector  = require("../index");
 var _             = require("lodash");
 var multiline     = require("multiline");
 
@@ -27,16 +26,16 @@ describe("Comparing Simple doms", function(){
          </html>
          */});
 
-        var oldDom = jsdom(str1);
-        var newDom = jsdom(str2);
+        var oldDom = createDom(str1);
+        var newDom = createDom(str2);
 
-        var diffs = stripDupes(compareDoms(oldDom, newDom));
+        var results = htmlInjector.getDiffs(oldDom, newDom);
 
-        assert.equal(diffs.length, 1);
-        assert.equal(diffs[0].tagName, "H1");
-        assert.equal(diffs[0].index, "0");
+        assert.equal(results.length, 1);
+        assert.equal(results[0].diffs.length, 1);
+        assert.equal(results[0].diffs[0].tagName, "H1");
+        assert.equal(results[0].diffs[0].index, "0");
     });
-
 
     it("returns element index when it has missing children", function(){
 
@@ -56,14 +55,15 @@ describe("Comparing Simple doms", function(){
          </html>
          */});
 
-        var oldDom = jsdom(str1);
-        var newDom = jsdom(str2);
+        var oldDom = createDom(str1);
+        var newDom = createDom(str2);
 
-        var diffs = stripDupes(compareDoms(oldDom, newDom));
+        var results = htmlInjector.getDiffs(oldDom, newDom);
 
-        assert.equal(diffs.length, 1);
-        assert.equal(diffs[0].tagName, "BODY");
-        assert.equal(diffs[0].index, "0");
+        assert.equal(results.length, 1);
+        assert.equal(results[0].diffs.length, 1);
+        assert.equal(results[0].diffs[0].tagName, "BODY");
+        assert.equal(results[0].diffs[0].index, "0");
     });
 
     it("Removes duplicate diffs if on same element", function(){
@@ -85,13 +85,14 @@ describe("Comparing Simple doms", function(){
          </html>
          */});
 
-        var oldDom = jsdom(str1);
-        var newDom = jsdom(str2);
+        var oldDom = createDom(str1);
+        var newDom = createDom(str2);
 
-        var diffs = stripDupes(compareDoms(oldDom, newDom));
+        var results = htmlInjector.getDiffs(oldDom, newDom);
 
-        assert.equal(diffs.length, 2);
-        assert.equal(diffs[0].tagName, "SPAN");
+        assert.equal(results.length, 1);
+        assert.equal(results[0].diffs.length, 2);
+        assert.equal(results[0].diffs[0].tagName, "SPAN");
     });
 
     it("Removes duplicate diffs if on same element", function(){
@@ -127,16 +128,15 @@ describe("Comparing Simple doms", function(){
             </html>
          */});
 
-        var oldDom = jsdom(str1);
-        var newDom = jsdom(str2);
+        var oldDom = createDom(str1);
+        var newDom = createDom(str2);
 
-        var diffs = stripDupes(compareDoms(oldDom, newDom));
+        var results = htmlInjector.getDiffs(oldDom, newDom);
 
-        assert.equal(diffs.length, 1);
-        assert.equal(diffs[0].tagName, "HEAD");
-        assert.equal(diffs[0].index, "0");
+        assert.equal(results.length, 1);
+        assert.equal(results[0].diffs.length, 1);
+        assert.equal(results[0].diffs[0].tagName, "HEAD");
     });
-
 
     it("Returns diffs from mulitple elements", function(){
 
@@ -171,16 +171,17 @@ describe("Comparing Simple doms", function(){
             </html>
          */});
 
-        var oldDom = jsdom(str1);
-        var newDom = jsdom(str2);
 
-        var diffs = stripDupes(compareDoms(oldDom, newDom));
+        var oldDom = createDom(str1);
+        var newDom = createDom(str2);
 
-        assert.equal(diffs.length, 2);
-        assert.equal(diffs[0].tagName, "HEAD");
-        assert.equal(diffs[1].tagName, "H1");
+        var results = htmlInjector.getDiffs(oldDom, newDom);
+
+        assert.equal(results.length, 1);
+        assert.equal(results[0].diffs.length, 2);
+        assert.equal(results[0].diffs[0].tagName, "HEAD");
+        assert.equal(results[0].diffs[1].tagName, "H1");
     });
-
 });
 
 describe("Removing excluded", function(){
@@ -208,12 +209,15 @@ describe("Removing excluded", function(){
          </html>
          */});
 
-        var oldDom = jsdom(str1);
-        var newDom = jsdom(str2);
+        var oldDom = createDom(str1);
+        var newDom = createDom(str2);
 
-        var diffs = stripExcluded(stripDupes(compareDoms(oldDom, newDom)), ["H1", "H3"]);
+        var results = htmlInjector.getDiffs(oldDom, newDom, {excludedTags: ["H1", "H3"]});
 
-        assert.equal(diffs.length, 1);
-        assert.equal(diffs[0].tagName, "H2");
+        assert.equal(results.length, 1);
+        assert.equal(results[0].selector, "html");
+        assert.equal(results[0].diffs.length, 1);
+        assert.equal(results[0].diffs[0].index, 0); // should ignore outer H3
+        assert.equal(results[0].diffs[0].tagName, "H2");
     });
 });

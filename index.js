@@ -170,16 +170,24 @@ module.exports["plugin"] = function (opts, bs) {
 /**
  * @param newDom
  * @param oldDomObject
- * @param opts
+ * @param [opts]
  * @returns {*}
  */
 function getDiffs(newDom, oldDomObject, opts) {
 
-    var diffs  = compareDoms(oldDomObject, newDom);
-    diffs      = utils.removeDupes(diffs);
-    diffs      = utils.removeExcluded(diffs, opts.excludedTags);
+    opts = opts || {};
 
-    return diffs;
+    var results  = compareDoms(oldDomObject, newDom, opts);
+
+    if (results.length) {
+        results = results.map(function (result) {
+            result.diffs = utils.removeDupes(result.diffs);
+            result.diffs = utils.removeExcluded(result.diffs, opts.excludedTags);
+            return result;
+        });
+    }
+
+    return results;
 }
 
 module.exports.getDiffs = getDiffs;

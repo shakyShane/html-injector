@@ -5,58 +5,34 @@ var assert        = require("chai").assert;
 var multiline     = require("multiline");
 
 describe(".plugin()", function () {
-    //it("should run with BrowserSync", function (done) {
-    //    browserSync.use(htmlInjector);
-    //    var instance = browserSync({}, done);
-    //});
-    //it("should respond to file:changed event", function (done) {
-    //    browserSync.use(htmlInjector);
-    //    var instance = browserSync({}, done);
-    //});
-    it.only("should respond e2e", function (done) {
-        //browserSync.use(htmlInjector);
-        //var instance = browserSync({}, done);
-        var str2 = multiline.stripIndent(function(){/*
-         <!doctype html>
-         <html>
-         <body>
-         <h1>❤ unicornsss</h1>
-         <h2><span>HATE</span> unicornsssas</h2>
-         <h3 class="hidden">Hi there</h3>
-         </body>
-         </html>
-         */});
-        var str3 = multiline.stripIndent(function(){/*
-         <!doctype html>
-         <html>
-         <body>
-         <h1>❤ unicornsss</h1>
-         <h2><span>HATE</span> unicornsssas</h2>
-         <h3 class="hidden">Hi there</h3>
-         <p>Another</p>
-         <span>Hi there</span>
-         </body>
-         </html>
-         */});
-
-        var dom1  = createDom(str2);
-        var dom2  = createDom(str3);
-        var diffs = htmlInjector.getDiffs(dom1, dom2, {excludedTags: []});
-
-        if (diffs) {
-            //oldDom = newDom;
-            console.log(diffs);
-        }
-
-        done();
-
-
-        //if (diffs) {
-        //    logger.setOnce("useLevelPrefixes", true).warn("Setting new comparison");
-        //    oldDom = newDom;
-        //    logger.debug("Differences found, injecting...");
-        //    inject(newDom.parentWindow, diffs);
-        //}
-
+    it("should run with BrowserSync `.use()`", function (done) {
+        browserSync.reset();
+        browserSync.use(htmlInjector);
+        browserSync({logLevel: "silent"}, function (err, bs) {
+            bs.cleanup();
+            done();
+        });
+    });
+    it("should run with BrowserSync as inline plugin", function (done) {
+        browserSync.reset();
+        var path = require.resolve("../index");
+        browserSync({plugins: [path], logLevel: "silent"}, function (err, bs) {
+            assert.equal(bs.getUserPlugins()[0].name, "HTML Injector");
+            assert.isTrue(bs.getUserPlugins()[0].active);
+            bs.cleanup();
+            done();
+        });
+    });
+    it("should run with BrowserSync as inline plugin with options", function (done) {
+        browserSync.reset();
+        var path = require.resolve("../index");
+        var config = {};
+        config[path] = {name: "shane"};
+        browserSync({plugins: [config], logLevel: "silent"}, function (err, bs) {
+            assert.equal(bs.getUserPlugins()[0].name, "HTML Injector");
+            assert.isTrue(bs.getUserPlugins()[0].active);
+            bs.cleanup();
+            done();
+        });
     });
 });
