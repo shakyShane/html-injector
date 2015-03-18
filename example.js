@@ -3,6 +3,7 @@ var htmlInjector = require("./index");
 
 browserSync.use(htmlInjector, {
     files: "test/fixtures/*.html",
+    selector: [".blog-masthead", "#haderz"]
     //excludedTags: ["BODY"],
     //logLevel: "debug"
 });
@@ -10,5 +11,6 @@ browserSync.use(htmlInjector, {
 browserSync({
     server: "test/fixtures",
     files: "test/fixtures/css/**",
+    port: 3001,
     open: false
 });

@@ -12,25 +12,44 @@
 
     socket.on("html:inject", function (data) {
 
+        var elem, parent;
+
         if (data.url !== getUrl()) {
             return;
         }
 
-        var elems = document.getElementsByTagName(data.tagName);
+        if (data.selector === "html") {
+            var elems = document.getElementsByTagName(data.tagName);
+            elem = elems[data.index];
+            updateElement(elem);
+        } else {
+            if (data.selector.match(/^#/)) {
+                parent = document.getElementById(data.selector.slice(1));
+                if (parent) {
+                    updateElement(parent.getElementsByTagName(data.tagName)[data.index]);
+                }
+            } else {
+                parent = document.querySelectorAll(data.selector);
+                if (parent.length) {
+                    updateElement(parent[0].getElementsByTagName(data.tagName)[data.index]);
+                }
+            }
+        }
 
-        var elem = elems[data.index];
+        function updateElement(elem) {
 
-        if (elem) {
+            if (elem) {
 
-            switch (data.diff.type) {
+                switch (data.diff.type) {
 
-                case "attribute":
-                    updateAttrs(elem, data);
-                    break;
-                default:
-                    updateElemHtml(elem, data.html);
-                    break;
+                    case "attribute":
+                        updateAttrs(elem, data);
+                        break;
+                    default:
+                        updateElemHtml(elem, data.html);
+                        break;
 
+                }
             }
         }
     });

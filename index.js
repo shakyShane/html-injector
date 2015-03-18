@@ -109,7 +109,7 @@ module.exports["plugin"] = function (opts, bs) {
             return;
         }
 
-        requestNew({});
+        requestNew(opts);
     }
 
     function pluginEvent () {
@@ -155,11 +155,15 @@ module.exports["plugin"] = function (opts, bs) {
                 if (!error && response.statusCode == 200) {
 
                     var newDom = createDom(body);
-                    var diffs  = getDiffs(newDom, htmlInjector.cache[url], opts);
+                    var results  = getDiffs(newDom, htmlInjector.cache[url], opts);
 
-                    if (diffs.length) {
-                        inject(newDom.parentWindow, diffs, url);
+                    if (results.length) {
+                        results.forEach(function (result) {
+                            inject(newDom.parentWindow, result.diffs, result.selector, url);
+                        });
                         htmlInjector.cache[url] = createDom(body);
+                    } else {
+                        htmlInjector.sockets.emit("browser:reload");
                     }
                 }
             });
