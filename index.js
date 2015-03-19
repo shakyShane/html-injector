@@ -47,16 +47,28 @@ module.exports["plugin"] = function (opts, bs) {
 
     var htmlInjector = instance = new HtmlInjector(opts, bs);
 
-    var url, oldDom;
-    var canFetchNew = true;
     var opts        = htmlInjector.opts;
     var logger      = htmlInjector.logger;
     var inject      = getInjector(htmlInjector.sockets, logger);
 
+    enabled = opts.enabled;
+
     /**
      * Configure event
      */
-    bs.events.on("plugins:configure", configurePlugin.bind(null, htmlInjector.sockets, logger));
+    bs.events.on("plugins:configure", function (data) {
+        var msg = "{cyan:Enabled";
+
+        if (!data.active) {
+            msg = "{yellow:Disabled";
+        } else {
+            htmlInjector.sockets.emit("browser:reload");
+        }
+
+        logger.info(msg);
+
+        enabled = data.active;
+    });
 
     /**
      * File changed event
@@ -84,81 +96,124 @@ module.exports["plugin"] = function (opts, bs) {
      * @param data
      */
     function handleUrlEvent (data) {
-        if (!canFetchNew || !enabled) {
+
+        if (!enabled) {
+
             return;
         }
-        url = data.url;
-        request(url, function (error, response, body) {
-            canFetchNew = false;
-            setTimeout(function () {
-                canFetchNew = true;
-            }, 2000);
-            logger.debug("Stashing: {magenta:%s", url);
+
+        request(data.url, function (error, response, body) {
+
+            logger.debug("Stashing: {magenta:%s", data.url);
+
             if (!error && response.statusCode == 200) {
-                oldDom = createDom(body);
+                var page = createDom(body);
+                htmlInjector.cache[data.url] = page;
             }
         });
     }
 
     function fileChangedEvent (data) {
-        if (!enabled && opts.handoff && data._origin !== config.PLUGIN_NAME) {
-            data.namespace = "core";
-            data._origin = config.PLUGIN_NAME;
-            htmlInjector.events.emit("file:changed", data);
+
+        if (!enabled) {
+
+            if (opts.handoff && data._origin !== config.PLUGIN_NAME) {
+                data.namespace = "core";
+                data._origin = config.PLUGIN_NAME;
+                htmlInjector.events.emit("file:changed", data);
+            }
+
             return;
         }
-        if (!url || !oldDom || data.namespace !== config.PLUGIN_NAME) {
-            return;
-        }
-        doNewRequest();
+
+        requestNew(opts);
     }
 
     function pluginEvent () {
-        if (!url || !oldDom) {
+
+        if (!htmlInjector.hasCached()) {
             return;
         }
+
         doNewRequest();
     }
 
     function doNewRequest() {
 
-        if (!enabled) {
+        if (!enabled || !htmlInjector.hasCached()) {
             return;
         }
 
-        logger.debug("Getting new HTML from: {magenta:%s", url);
+        logger.debug("Getting new HTML from: {magenta:%s} urls", Object.keys(htmlInjector.cache).length);
 
-        requestNew(url, opts);
+        requestNew(opts);
     }
     /**
      * Request new version of Dom
      * @param {String} url
-     * @param {Object} oldDom
      * @param {Object} opts - plugin options
-     * @param {Function} cb
      */
-    function requestNew (url, opts) {
+    function requestNew (opts) {
 
-        request(url, function (error, response, body) {
+        // Remove any
+        var valid = bs.io.of(bs.options.getIn(["socket", "namespace"])).sockets.map(function (client) {
+            return client.handshake.headers.referer;
+        });
 
-            if (!error && response.statusCode == 200) {
+        logger.debug("Cache items: {yellow:%s", Object.keys(htmlInjector.cache).length);
 
-                var newDom = createDom(body);
-                var diffs  = compareDoms(oldDom, newDom);
+        Object.keys(htmlInjector.cache).forEach(function (url) {
 
-                diffs      = utils.removeDupes(diffs);
-                diffs      = utils.removeExcluded(diffs, opts.excludedTags);
-
-                if (diffs) {
-                    oldDom = newDom;
-                    logger.debug("Differences found, injecting...");
-                    inject(newDom.parentWindow, diffs);
-                }
+            if (valid.indexOf(url) === -1) {
+                delete htmlInjector.cache[url];
+                return;
             }
+
+            request(url, function (error, response, body) {
+
+                if (!error && response.statusCode == 200) {
+
+                    var newDom = createDom(body);
+                    var results  = getDiffs(newDom, htmlInjector.cache[url], opts);
+
+                    if (results.length) {
+                        results.forEach(function (result) {
+                            inject(result.parent, result.diffs, result.selector, url);
+                        });
+                        htmlInjector.cache[url] = createDom(body);
+                    } else {
+                        htmlInjector.sockets.emit("browser:reload");
+                    }
+                }
+            });
         });
     }
 };
 
+/**
+ * @param newDom
+ * @param oldDomObject
+ * @param [opts]
+ * @returns {*}
+ */
+function getDiffs(newDom, oldDomObject, opts) {
+
+    opts = opts || {};
+
+    var results  = compareDoms(oldDomObject, newDom, opts);
+
+    if (results.length) {
+        results = results.map(function (result) {
+            result.diffs = utils.removeDupes(result.diffs);
+            result.diffs = utils.removeExcluded(result.diffs, opts.excludedTags);
+            return result;
+        });
+    }
+
+    return results;
+}
+
+module.exports.getDiffs = getDiffs;
 
 /**
  * Reload browsers
