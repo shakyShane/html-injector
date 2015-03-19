@@ -13,5 +13,6 @@ browserSync({
     server: "test/fixtures",
     files: "test/fixtures/css/**",
     port: 3001,
-    open: false
+    open: false,
+    online: false
 });

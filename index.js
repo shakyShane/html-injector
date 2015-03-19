@@ -10,12 +10,10 @@ var emitter      = new events.EventEmitter();
 var _            = require("lodash");
 var request      = require('request');
 
-var compareDoms  = require("./lib/injector").compareDoms;
 var createDom    = require("./lib/injector").createDom;
 
 var HtmlInjector = require("./lib/html-injector");
 var config       = require("./lib/config");
-var utils        = require("./lib/utils");
 
 /**
  * ON/OFF flag
@@ -176,17 +174,12 @@ module.exports["plugin"] = function (opts, bs) {
 
                 if (!error && response.statusCode == 200) {
 
-                    var newDom = createDom(body);
-                    var results  = getDiffs(newDom, htmlInjector.cache[url], opts);
+                    var tasks = htmlInjector.process(body, htmlInjector.cache[url], url, opts);
 
-                    if (results.length) {
-                        results.forEach(function (result) {
-                            var tasks = htmlInjector.getTasks(result.parent, result.diffs, result.selector, url);
-                            tasks.forEach(function (task) {
-                                clients.emit(config.CLIENT_EVENT, task);
-                            });
+                    if (tasks.length) {
+                        tasks.forEach(function (task) {
+                            clients.emit(config.CLIENT_EVENT, task);
                         });
-                        htmlInjector.cache[url] = createDom(body);
                     } else {
                         clients.emit("browser:reload");
                     }
@@ -195,31 +188,6 @@ module.exports["plugin"] = function (opts, bs) {
         });
     }
 };
-
-/**
- * @param newDom
- * @param oldDomObject
- * @param [opts]
- * @returns {*}
- */
-function getDiffs(newDom, oldDomObject, opts) {
-
-    opts = opts || {};
-
-    var results  = compareDoms(oldDomObject, newDom, opts);
-
-    if (results.length) {
-        results = results.map(function (result) {
-            result.diffs = utils.removeDupes(result.diffs);
-            result.diffs = utils.removeExcluded(result.diffs, opts.excludedTags);
-            return result;
-        });
-    }
-
-    return results;
-}
-
-module.exports.getDiffs = getDiffs;
 
 /**
  * Client JS hook
