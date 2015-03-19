@@ -11,7 +11,6 @@ var _            = require("lodash");
 var request      = require('request');
 
 var compareDoms  = require("./lib/injector").compareDoms;
-var getInjector  = require("./lib/injector").getInjector;
 var createDom    = require("./lib/injector").createDom;
 
 var HtmlInjector = require("./lib/html-injector");
@@ -45,13 +44,17 @@ module.exports = function () {
  */
 module.exports["plugin"] = function (opts, bs) {
 
-    var htmlInjector = instance = new HtmlInjector(opts, bs);
+    var logger       = bs.getLogger(config.PLUGIN_NAME).info("Running...");
 
-    var opts        = htmlInjector.opts;
-    var logger      = htmlInjector.logger;
-    var inject      = getInjector(htmlInjector.sockets, logger);
+    if (typeof opts.logLevel !== "undefined") {
+        logger.setLevel(opts.logLevel);
+    }
 
-    enabled = opts.enabled;
+    var htmlInjector = instance = new HtmlInjector(opts, logger, bs);
+    var opts         = htmlInjector.opts;
+    var clients      = bs.io.of(bs.options.getIn(["socket", "namespace"]));
+
+    enabled = htmlInjector.opts.enabled;
 
     /**
      * Configure event
@@ -62,7 +65,7 @@ module.exports["plugin"] = function (opts, bs) {
         if (!data.active) {
             msg = "{yellow:Disabled";
         } else {
-            htmlInjector.sockets.emit("browser:reload");
+            clients.emit("browser:reload");
         }
 
         logger.info(msg);
@@ -83,7 +86,7 @@ module.exports["plugin"] = function (opts, bs) {
     /**
      * Socket Connection event
      */
-    htmlInjector.sockets.on("connection", handleSocketConnection);
+    clients.on("connection", handleSocketConnection);
 
     /**
      * Catch the above ^
@@ -120,7 +123,7 @@ module.exports["plugin"] = function (opts, bs) {
             if (opts.handoff && data._origin !== config.PLUGIN_NAME) {
                 data.namespace = "core";
                 data._origin = config.PLUGIN_NAME;
-                htmlInjector.events.emit("file:changed", data);
+                bs.events.emit("file:changed", data);
             }
 
             return;
@@ -178,11 +181,14 @@ module.exports["plugin"] = function (opts, bs) {
 
                     if (results.length) {
                         results.forEach(function (result) {
-                            inject(result.parent, result.diffs, result.selector, url);
+                            var tasks = htmlInjector.getTasks(result.parent, result.diffs, result.selector, url);
+                            tasks.forEach(function (task) {
+                                clients.emit(config.CLIENT_EVENT, task);
+                            });
                         });
                         htmlInjector.cache[url] = createDom(body);
                     } else {
-                        htmlInjector.sockets.emit("browser:reload");
+                        clients.emit("browser:reload");
                     }
                 }
             });
@@ -214,31 +220,6 @@ function getDiffs(newDom, oldDomObject, opts) {
 }
 
 module.exports.getDiffs = getDiffs;
-
-/**
- * Reload browsers
- * @param sockets
- * @param logger
- * @param data
- */
-function configurePlugin (sockets, logger, data) {
-
-    if (data.name !== config.PLUGIN_NAME) {
-        return;
-    }
-
-    var msg = "{cyan:Enabled";
-
-    if (!data.active) {
-        msg = "{yellow:Disabled";
-    } else {
-        sockets.emit("browser:reload");
-    }
-
-    logger.info(msg);
-
-    enabled = data.active;
-}
 
 /**
  * Client JS hook

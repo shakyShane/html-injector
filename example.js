@@ -3,7 +3,8 @@ var htmlInjector = require("./index");
 
 browserSync.use(htmlInjector, {
     files: "test/fixtures/*.html",
-    selector: [".blog-masthead", "#haderz"]
+    selector: [".blog-masthead", "#haderz"],
+    enabled: true
     //excludedTags: ["BODY"],
     //logLevel: "debug"
 });
