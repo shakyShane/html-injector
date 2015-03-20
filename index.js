@@ -7,9 +7,8 @@
 
 var events       = require('events');
 var emitter      = new events.EventEmitter();
-var _            = require("lodash");
 var request      = require('request');
-
+var debug        = require('debug')('bs-html-injector');
 var createDom    = require("./lib/injector").createDom;
 
 var HtmlInjector = require("./lib/html-injector");
@@ -170,6 +169,8 @@ module.exports["plugin"] = function (opts, bs) {
                 return;
             }
 
+            debug("requesting %s", url);
+
             request(url, function (error, response, body) {
 
                 if (!error && response.statusCode == 200) {
@@ -177,10 +178,13 @@ module.exports["plugin"] = function (opts, bs) {
                     var tasks = htmlInjector.process(body, htmlInjector.cache[url], url, opts);
 
                     if (tasks.length) {
+                        debug("%s tasks returned", tasks.length);
                         tasks.forEach(function (task) {
+                            debug("Task: TAG: %s, INDEX: %s", task.tagName, task.index);
                             clients.emit(config.CLIENT_EVENT, task);
                         });
                     } else {
+                        debug("0 tasks returned, reloading instead");
                         clients.emit("browser:reload");
                     }
                 }
