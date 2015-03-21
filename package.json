@@ -1,6 +1,6 @@
 {
   "name": "bs-html-injector",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Inject only HTML that has changed.",
   "main": "index.js",
   "repository": {
