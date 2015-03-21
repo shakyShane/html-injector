@@ -126,6 +126,13 @@ module.exports["plugin"] = function (opts, bs) {
             return;
         }
 
+        if (data.namespace !== config.PLUGIN_NAME) {
+            debug('Ignoring file change to ', data.path);
+            return;
+        }
+
+        debug('Responding to file change event', data.namespace);
+
         requestNew(opts);
     }
 
