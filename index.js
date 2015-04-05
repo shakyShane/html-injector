@@ -51,12 +51,23 @@ module.exports["plugin"] = function (opts, bs) {
     var opts         = htmlInjector.opts;
     var clients      = bs.io.of(bs.options.getIn(["socket", "namespace"]));
 
+    bs.ui.listen(config.PLUGIN_NAME, {
+        remove: function () {
+            console.log("REMOVE EVENT");
+        }
+    });
+
     enabled = htmlInjector.opts.enabled;
 
     /**
      * Configure event
      */
     bs.events.on("plugins:configure", function (data) {
+
+        if (data.name !== config.PLUGIN_NAME) {
+            return;
+        }
+
         var msg = "{cyan:Enabled";
 
         if (!data.active) {

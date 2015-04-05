@@ -33,5 +33,12 @@
   "keywords": [
     "browser sync plugin",
     "html injection"
-  ]
+  ],
+  "browser-sync:ui": {
+    "hooks": {
+      "markup": "ui/html-injector.html",
+      "templates": ["ui/html-injector.directive.html"],
+      "client:js": ["ui/client.js"]
+    }
+  }
 }
