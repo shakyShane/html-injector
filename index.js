@@ -13,6 +13,7 @@ var createDom    = require("./lib/injector").createDom;
 
 var HtmlInjector = require("./lib/html-injector");
 var config       = require("./lib/config");
+var _            = require("lodash");
 
 /**
  * ON/OFF flag
@@ -41,6 +42,8 @@ module.exports = function () {
  */
 module.exports["plugin"] = function (opts, bs) {
 
+    opts = opts || {};
+
     var logger       = bs.getLogger(config.PLUGIN_NAME).info("Running...");
 
     if (typeof opts.logLevel !== "undefined") {
@@ -50,6 +53,29 @@ module.exports["plugin"] = function (opts, bs) {
     var htmlInjector = instance = new HtmlInjector(opts, logger, bs);
     var opts         = htmlInjector.opts;
     var clients      = bs.io.of(bs.options.getIn(["socket", "namespace"]));
+    var ui           = bs.io.of(bs.ui.config.getIn(["socket", "namespace"]));
+
+    bs.ui.listen(config.PLUGIN_NAME, {
+        "restriction:add": function (data) {
+            opts.restrictions = _.uniq(opts.restrictions.concat([data]));
+            updateOptions(opts);
+        },
+        "restriction:remove": function (data) {
+            opts.restrictions = _.without(opts.restrictions, data);
+            updateOptions(opts);
+        }
+    });
+
+    function updateOptions (opts) {
+        bs.events.emit("plugins:opts", {
+            name: config.PLUGIN_NAME,
+            opts: opts
+        });
+        ui.emit("options:update", {
+            name: config.PLUGIN_NAME,
+            opts: bs.getUserPlugin(config.PLUGIN_NAME).opts
+        });
+    }
 
     enabled = htmlInjector.opts.enabled;
 
@@ -57,6 +83,11 @@ module.exports["plugin"] = function (opts, bs) {
      * Configure event
      */
     bs.events.on("plugins:configure", function (data) {
+
+        if (data.name !== config.PLUGIN_NAME) {
+            return;
+        }
+
         var msg = "{cyan:Enabled";
 
         if (!data.active) {
@@ -107,8 +138,7 @@ module.exports["plugin"] = function (opts, bs) {
             logger.debug("Stashing: {magenta:%s", data.url);
 
             if (!error && response.statusCode == 200) {
-                var page = createDom(body);
-                htmlInjector.cache[data.url] = page;
+                htmlInjector.cache[data.url] = createDom(body);
             }
         });
     }

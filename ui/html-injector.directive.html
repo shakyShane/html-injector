@@ -1,0 +1,34 @@
+<section>
+    <div bs-panel-content>
+        <p>Default behaviour is to compare the entire page. You can also restrict the comparisons
+            for localized edits.
+        </p>
+    </div>
+    <div bs-panel-content>
+        <div bs-inputs bs-grid="desk-2">
+            <div bs-grid-item="padded-right">
+                <div bs-input="text">
+                    <form ng-submit="ctrl.addRestriction(ctrl.restriction)">
+                        <label for="new-restriction" bs-input-label>New Restriction</label>
+                        <input id="new-restriction" type="text" size="" value="" ng-model="ctrl.restriction" placeholder="eg: #main">
+                    </form>
+                </div>
+            </div>
+            <div bs-grid-item>
+                <p bs-label-heading><b>Current Restrictions:</b></p>
+                <ul bs-list="bordered inline-controls">
+                    <li ng-repeat="item in ctrl.plugin.opts.restrictions track by $index">
+                        <p bs-text="mono">{{item}}</p>
+                        <div bs-button-group>
+                            <button href="#" bs-button="subtle-alt icon" ng-click="ctrl.removeRestriction(item)">
+                                <svg bs-svg-icon>
+                                    <use xlink:href="#svg-bin"></use>
+                                </svg>
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>

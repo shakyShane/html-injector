@@ -1,8 +1,6 @@
 var createDom     = require("../lib/injector").createDom;
-var jsdom         = require("jsdom").jsdom;
 var assert        = require("chai").assert;
-var htmlInjector  = require("../index");
-var _             = require("lodash");
+var HtmlInjector  = require("../lib/html-injector");
 var multiline     = require("multiline");
 
 describe("Comparing Simple doms", function(){
@@ -27,14 +25,12 @@ describe("Comparing Simple doms", function(){
          */});
 
         var oldDom = createDom(str1);
-        var newDom = createDom(str2);
-
-        var results = htmlInjector.getDiffs(oldDom, newDom);
+        var results = HtmlInjector().process(str2, oldDom);
 
         assert.equal(results.length, 1);
-        assert.equal(results[0].diffs.length, 1);
-        assert.equal(results[0].diffs[0].tagName, "H1");
-        assert.equal(results[0].diffs[0].index, "0");
+        assert.equal(results[0].restrictions, "html");
+        assert.equal(results[0].tagName, "H1");
+        assert.equal(results[0].index, "0");
     });
 
     it("returns element index when it has missing children", function(){
@@ -56,14 +52,12 @@ describe("Comparing Simple doms", function(){
          */});
 
         var oldDom = createDom(str1);
-        var newDom = createDom(str2);
-
-        var results = htmlInjector.getDiffs(oldDom, newDom);
+        var results = HtmlInjector().process(str2, oldDom);
 
         assert.equal(results.length, 1);
-        assert.equal(results[0].diffs.length, 1);
-        assert.equal(results[0].diffs[0].tagName, "BODY");
-        assert.equal(results[0].diffs[0].index, "0");
+        assert.equal(results[0].restrictions, "html");
+        assert.equal(results[0].tagName, "BODY");
+        assert.equal(results[0].index, "0");
     });
 
     it("Removes duplicate diffs if on same element", function(){
@@ -86,13 +80,11 @@ describe("Comparing Simple doms", function(){
          */});
 
         var oldDom = createDom(str1);
-        var newDom = createDom(str2);
+        var results = HtmlInjector().process(str2, oldDom);
 
-        var results = htmlInjector.getDiffs(oldDom, newDom);
-
-        assert.equal(results.length, 1);
-        assert.equal(results[0].diffs.length, 2);
-        assert.equal(results[0].diffs[0].tagName, "SPAN");
+        assert.equal(results.length, 2);
+        assert.equal(results[0].tagName, "SPAN");
+        assert.equal(results[1].tagName, "H1");
     });
 
     it("Removes duplicate diffs if on same element", function(){
@@ -129,15 +121,11 @@ describe("Comparing Simple doms", function(){
          */});
 
         var oldDom = createDom(str1);
-        var newDom = createDom(str2);
-
-        var results = htmlInjector.getDiffs(oldDom, newDom);
+        var results = HtmlInjector().process(str2, oldDom);
 
         assert.equal(results.length, 1);
-        assert.equal(results[0].diffs.length, 1);
-        assert.equal(results[0].diffs[0].tagName, "HEAD");
+        assert.equal(results[0].tagName, "HEAD");
     });
-
     it("Returns diffs from mulitple elements", function(){
 
         var str1 = multiline.stripIndent(function(){/*
@@ -171,22 +159,18 @@ describe("Comparing Simple doms", function(){
             </html>
          */});
 
-
         var oldDom = createDom(str1);
-        var newDom = createDom(str2);
+        var results = HtmlInjector().process(str2, oldDom);
 
-        var results = htmlInjector.getDiffs(oldDom, newDom);
-
-        assert.equal(results.length, 1);
-        assert.equal(results[0].diffs.length, 2);
-        assert.equal(results[0].diffs[0].tagName, "HEAD");
-        assert.equal(results[0].diffs[1].tagName, "H1");
+        assert.equal(results.length, 2);
+        assert.equal(results[0].tagName, "HEAD");
+        assert.equal(results[1].tagName, "H1");
     });
 });
 
 describe("Removing excluded", function(){
 
-    it("returns a filtereed list", function(){
+    it("returns a filtered list", function(){
 
         var str1 = multiline.stripIndent(function(){/*
          <!doctype html>
@@ -210,14 +194,13 @@ describe("Removing excluded", function(){
          */});
 
         var oldDom = createDom(str1);
-        var newDom = createDom(str2);
+        var results = HtmlInjector().process(str2, oldDom, null, {excludedTags: ["H1", "H3"]});
 
-        var results = htmlInjector.getDiffs(oldDom, newDom, {excludedTags: ["H1", "H3"]});
 
         assert.equal(results.length, 1);
-        assert.equal(results[0].selector, "html");
-        assert.equal(results[0].diffs.length, 1);
-        assert.equal(results[0].diffs[0].index, 0); // should ignore outer H3
-        assert.equal(results[0].diffs[0].tagName, "H2");
+
+        assert.equal(results[0].restrictions, "html");
+        assert.equal(results[0].index, 0); // should ignore outer H3
+        assert.equal(results[0].tagName, "H2");
     });
 });
