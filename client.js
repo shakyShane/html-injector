@@ -26,12 +26,20 @@
             if (data.restrictions.match(/^#/)) {
                 parent = document.getElementById(data.restrictions.slice(1));
                 if (parent) {
-                    updateElement(parent.getElementsByTagName(data.tagName)[data.index]);
+                    if (data.tagName === "BODY") {
+                        updateElement(parent);
+                    } else {
+                        updateElement(parent.getElementsByTagName(data.tagName)[data.index]);
+                    }
                 }
             } else {
                 parent = document.querySelectorAll(data.restrictions);
                 if (parent.length) {
-                    updateElement(parent[0].getElementsByTagName(data.tagName)[data.index]);
+                    if (data.tagName === "BODY") {
+                        updateElement(parent[0]);
+                    } else {
+                        updateElement(parent[0].getElementsByTagName(data.tagName)[data.index]);
+                    }
                 }
             }
         }

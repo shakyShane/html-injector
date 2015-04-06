@@ -42,6 +42,8 @@ module.exports = function () {
  */
 module.exports["plugin"] = function (opts, bs) {
 
+    opts = opts || {};
+
     var logger       = bs.getLogger(config.PLUGIN_NAME).info("Running...");
 
     if (typeof opts.logLevel !== "undefined") {
@@ -71,7 +73,7 @@ module.exports["plugin"] = function (opts, bs) {
         });
         ui.emit("options:update", {
             name: config.PLUGIN_NAME,
-            opts: bs.getOption("userPlugins")[1].opts
+            opts: bs.getUserPlugin(config.PLUGIN_NAME).opts
         });
     }
 

@@ -1,6 +1,5 @@
-var browserSync   = require("browser-sync");
 var createDom     = require("../lib/injector").createDom;
-var htmlInjector  = require("../index");
+var HtmlInjector  = require("../lib/html-injector");
 var assert        = require("chai").assert;
 var multiline     = require("multiline");
 
@@ -30,47 +29,24 @@ describe("Comparing doms with restricted selector", function () {
 
     it("should compare correctly when no restriction given", function (done) {
 
-        var dom1  = createDom(html1);
-        var dom2  = createDom(html2);
-
-        var results = htmlInjector.getDiffs(dom1, dom2);
-
+        var oldDom = createDom(html1);
+        var results = HtmlInjector().process(html2, oldDom);
         assert.equal(results.length, 1);
-        assert.equal(results[0].selector, "html");
-        assert.equal(results[0].diffs.length, 1);
-        assert.equal(results[0].diffs[0].index, 1);
-        assert.equal(results[0].diffs[0].tagName, "H3");
+        assert.equal(results[0].restrictions, "html");
+        assert.equal(results[0].index, 1);
+        assert.equal(results[0].tagName, "H3");
         done();
     });
 
     it("should compare correctly when `id` selector given", function (done) {
 
-        var dom1  = createDom(html1);
-        var dom2  = createDom(html2);
-
-        var results = htmlInjector.getDiffs(dom1, dom2, {selector: ["#shane"]});
+        var oldDom = createDom(html1);
+        var results = HtmlInjector().process(html2, oldDom, null, {restrictions: ["#shane"]});
 
         assert.equal(results.length, 1);
-        assert.equal(results[0].selector, "#shane");
-        assert.equal(results[0].diffs.length, 1);
-        assert.equal(results[0].diffs[0].index, 0); // should ignore outer H3
-        assert.equal(results[0].diffs[0].tagName, "H3");
-
-        done();
-    });
-    it("should compare correctly when `id` selector given", function (done) {
-
-
-        var dom1  = createDom(html1);
-        var dom2  = createDom(html2);
-
-        var results = htmlInjector.getDiffs(dom1, dom2, {selector: ["#shane"]});
-
-        assert.equal(results.length, 1);
-        assert.equal(results[0].selector, "#shane");
-        assert.equal(results[0].diffs.length, 1);
-        assert.equal(results[0].diffs[0].index, 0); // should ignore outer H3
-        assert.equal(results[0].diffs[0].tagName, "H3");
+        assert.equal(results[0].restrictions, "#shane");
+        assert.equal(results[0].index, 0); // should ignore outer H3
+        assert.equal(results[0].tagName, "H3");
 
         done();
     });
