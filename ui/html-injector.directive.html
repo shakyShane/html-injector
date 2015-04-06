@@ -1,21 +1,42 @@
 <section>
     <div bs-panel-content>
-        <p>Default behaviour is to compare the entire page. You can also restrict the comparisons
-            for localized edits.
-        </p>
-    </div>
-    <div bs-panel-content>
         <div bs-inputs bs-grid="desk-2">
             <div bs-grid-item="padded-right">
                 <div bs-input="text">
                     <form ng-submit="ctrl.addRestriction(ctrl.restriction)">
-                        <label for="new-restriction" bs-input-label>New Restriction</label>
-                        <input id="new-restriction" type="text" size="" value="" ng-model="ctrl.restriction" placeholder="eg: #main">
+                        <div bs-input="text">
+                            <label for="new-restriction" bs-input-label>New Restriction</label>
+                            <input bs-stack
+                                   id="new-restriction"
+                                   type="text"
+                                   value=""
+                                   ng-model="ctrl.restriction"
+                                   placeholder="eg: #main">
+                            <div bs-state-wrapper ng-class="[ctrl.state.classname]">
+                                <button type="submit"
+                                        id="add-restriction"
+                                        bs-button="size-small subtle-alt icon-left"
+                                        ng-blur="ctrl.state.classname === 'ready'"
+                                        ng-disabled="ctrl.state.waiting">
+                                    <svg bs-svg-icon="" icon="circle-plus"><use xlink:href="#svg-circle-plus"></use></svg>
+                                    Add
+                                </button>
+                                <div bs-state-icons>
+                                    <svg bs-svg-icon icon="circle-ok" bs-state="success inline"><use xlink:href="#svg-circle-ok"></use></svg>
+                                    <svg bs-svg-icon icon="circle-minus" bs-state="waiting inline" bs-anim="spin"><use xlink:href="#svg-circle-minus"></use></svg>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
             </div>
             <div bs-grid-item>
-                <p bs-label-heading><b>Current Restrictions:</b></p>
+                <div ng-show="!ctrl.plugin.opts.restrictions.length">
+                    <p bs-label-heading>No Restrictions.</p>
+                    <p>This means the entire page will be used for comparison. If this is slow, or causes
+                    errors, narrow down the comparison by using a CSS selectors.</p>
+                </div>
+                <p bs-label-heading ng-show="ctrl.plugin.opts.restrictions.length"><b>Current Restrictions:</b></p>
                 <ul bs-list="bordered inline-controls">
                     <li ng-repeat="item in ctrl.plugin.opts.restrictions track by $index">
                         <p bs-text="mono">{{item}}</p>

@@ -19,20 +19,41 @@
 
                     ctrl.restriction = "";
 
+                    ctrl.state = {
+                        classname: "ready"
+                    };
+
                     ctrl.plugin = $scope.options.userPlugins.filter(function (item) {
                         return item.name === PLUGIN_NAME;
                     })[0];
 
                     ctrl.addRestriction = function (selector) {
+
                         if (selector.length < 3) {
                             return;
                         }
+
                         ctrl.restriction = "";
-                        Socket.uiEvent({
-                            namespace: PLUGIN_NAME,
-                            event: "restriction:add",
-                            data: selector
-                        });
+                        ctrl.state.classname = "waiting";
+
+                        setTimeout(function () {
+
+                            ctrl.state.classname = "success";
+
+                            $scope.$digest();
+
+                            setTimeout(function () {
+                                ctrl.state.classname = "ready";
+                                $scope.$digest();
+                            }, 1000);
+
+                            Socket.uiEvent({
+                                namespace: PLUGIN_NAME,
+                                event: "restriction:add",
+                                data: selector
+                            });
+                        }, 300);
+
                     };
 
                     ctrl.removeRestriction = function (selector) {
