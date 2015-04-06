@@ -31,15 +31,27 @@
                 restrict: "E",
                 replace: true,
                 scope: {
-                    "options": "="
+                    "options": "=",
+                    "pluginOpts": "="
                 },
                 templateUrl: "html-injector.directive.html",
                 controller: ["$scope", "Socket", function ($scope, Socket) {
+
                     var ctrl = this;
+                    ctrl.restriction = "";
+
+                    ctrl.addRestriction = function (selector) {
+                        Socket.uiEvent({
+                            namespace: PLUGIN_NAME,
+                            event: "restriction:add",
+                            data: selector
+                        });
+                    };
+
                     ctrl.removeRestriction = function (selector) {
                         Socket.uiEvent({
                             namespace: PLUGIN_NAME,
-                            event: "remove",
+                            event: "restriction:remove",
                             data: selector
                         });
                     };

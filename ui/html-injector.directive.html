@@ -8,8 +8,10 @@
         <div bs-inputs bs-grid="desk-2">
             <div bs-grid-item="padded-right">
                 <div bs-input="text">
-                    <label for="new-restriction" bs-input-label="">New Restriction</label>
-                    <input id="new-restriction" type="text" size="" value="" placeholder="eg: #main">
+                    <form ng-submit="ctrl.addRestriction(ctrl.restriction)">
+                        <label for="new-restriction" bs-input-label>New Restriction</label>
+                        <input id="new-restriction" type="text" size="" value="" ng-model="ctrl.restriction" placeholder="eg: #main">
+                    </form>
                 </div>
             </div>
             <div bs-grid-item>

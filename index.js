@@ -13,6 +13,7 @@ var createDom    = require("./lib/injector").createDom;
 
 var HtmlInjector = require("./lib/html-injector");
 var config       = require("./lib/config");
+var _            = require("lodash");
 
 /**
  * ON/OFF flag
@@ -52,8 +53,13 @@ module.exports["plugin"] = function (opts, bs) {
     var clients      = bs.io.of(bs.options.getIn(["socket", "namespace"]));
 
     bs.ui.listen(config.PLUGIN_NAME, {
-        remove: function () {
-            console.log("REMOVE EVENT");
+        "restriction:add": function (data) {
+            opts.restrictions = _.uniq(opts.restrictions.concat([data]));
+            console.log(opts.restrictions);
+        },
+        "restriction:remove": function (data) {
+            opts.restrictions = _.without(opts.restrictions, data);
+            console.log(opts.restrictions);
         }
     });
 
@@ -118,8 +124,7 @@ module.exports["plugin"] = function (opts, bs) {
             logger.debug("Stashing: {magenta:%s", data.url);
 
             if (!error && response.statusCode == 200) {
-                var page = createDom(body);
-                htmlInjector.cache[data.url] = page;
+                htmlInjector.cache[data.url] = createDom(body);
             }
         });
     }
