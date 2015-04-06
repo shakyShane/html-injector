@@ -4,28 +4,6 @@
 
     angular
         .module("BrowserSync")
-        .controller("HtmlInjector", function () {
-            var ctrl = this;
-            ctrl.htmlInjector = {
-                active: false
-            }
-        })
-
-    /**
-     * Controller for the URL sync
-     * @param $scope - directive scope
-     * @param History
-     * @param Clients
-     */
-    function htmlInjectorDirective($scope, History, Clients) {
-
-        var ctrl = this;
-
-        console.log("HTML INJECTOR");
-    }
-
-    angular
-        .module("BrowserSync")
         .directive("htmlInjector", function () {
             return {
                 restrict: "E",
@@ -38,9 +16,18 @@
                 controller: ["$scope", "Socket", function ($scope, Socket) {
 
                     var ctrl = this;
+
                     ctrl.restriction = "";
 
+                    ctrl.plugin = $scope.options.userPlugins.filter(function (item) {
+                        return item.name === PLUGIN_NAME;
+                    })[0];
+
                     ctrl.addRestriction = function (selector) {
+                        if (selector.length < 3) {
+                            return;
+                        }
+                        ctrl.restriction = "";
                         Socket.uiEvent({
                             namespace: PLUGIN_NAME,
                             event: "restriction:add",
@@ -55,6 +42,17 @@
                             data: selector
                         });
                     };
+
+                    ctrl.update = function (data) {
+                        ctrl.plugin.opts = data.opts;
+                        $scope.$digest();
+                    };
+
+                    Socket.on("options:update", ctrl.update);
+
+                    $scope.$on("$destory", function () {
+                        Socket.off("options:update", ctrl.update);
+                    });
                 }],
                 controllerAs: "ctrl"
             };

@@ -17,19 +17,16 @@
             <div bs-grid-item>
                 <p bs-label-heading><b>Current Restrictions:</b></p>
                 <ul bs-list="bordered inline-controls">
-                    <li>
-                        <p bs-text="mono">#main</p>
-
+                    <li ng-repeat="item in ctrl.plugin.opts.restrictions track by $index">
+                        <p bs-text="mono">{{item}}</p>
                         <div bs-button-group>
-                            <button href="#" bs-button="subtle-alt icon" ng-click="ctrl.removeRestriction()">
-                                <svg bs-svg-icon="">
+                            <button href="#" bs-button="subtle-alt icon" ng-click="ctrl.removeRestriction(item)">
+                                <svg bs-svg-icon>
                                     <use xlink:href="#svg-bin"></use>
                                 </svg>
                             </button>
                         </div>
                     </li>
-                    <li><p bs-text="mono">#header</p></li>
-                    <li><p bs-text="mono">#footer</p></li>
                 </ul>
             </div>
         </div>

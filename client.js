@@ -18,18 +18,18 @@
             return;
         }
 
-        if (data.selector === "html") {
+        if (data.restrictions === "html") {
             var elems = document.getElementsByTagName(data.tagName);
             elem = elems[data.index];
             updateElement(elem);
         } else {
-            if (data.selector.match(/^#/)) {
-                parent = document.getElementById(data.selector.slice(1));
+            if (data.restrictions.match(/^#/)) {
+                parent = document.getElementById(data.restrictions.slice(1));
                 if (parent) {
                     updateElement(parent.getElementsByTagName(data.tagName)[data.index]);
                 }
             } else {
-                parent = document.querySelectorAll(data.selector);
+                parent = document.querySelectorAll(data.restrictions);
                 if (parent.length) {
                     updateElement(parent[0].getElementsByTagName(data.tagName)[data.index]);
                 }
