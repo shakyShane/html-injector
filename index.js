@@ -145,6 +145,10 @@ module.exports["plugin"] = function (opts, bs) {
 
     function fileChangedEvent (data) {
 
+        if (!_.isUndefined(data.event) && data.event !== "change") {
+            return;
+        }
+
         if (!enabled) {
 
             if (opts.handoff && data._origin !== config.PLUGIN_NAME) {
