@@ -53,24 +53,29 @@ module.exports["plugin"] = function (opts, bs) {
     var htmlInjector = instance = new HtmlInjector(opts, logger, bs);
     var opts         = htmlInjector.opts;
     var clients      = bs.io.of(bs.options.getIn(["socket", "namespace"]));
-    var ui           = bs.io.of(bs.ui.config.getIn(["socket", "namespace"]));
+    var ui = null;
+    if (bs.options.ui) { // if ui is enabled
+        ui           = bs.io.of(bs.ui.config.getIn(["socket", "namespace"]));
 
-    bs.ui.listen(config.PLUGIN_NAME, {
-        "restriction:add": function (data) {
-            opts.restrictions = _.uniq(opts.restrictions.concat([data]));
-            updateOptions(opts);
-        },
-        "restriction:remove": function (data) {
-            opts.restrictions = _.without(opts.restrictions, data);
-            updateOptions(opts);
-        }
-    });
+        bs.ui.listen(config.PLUGIN_NAME, {
+            "restriction:add": function (data) {
+                opts.restrictions = _.uniq(opts.restrictions.concat([data]));
+                updateOptions(opts);
+            },
+            "restriction:remove": function (data) {
+                opts.restrictions = _.without(opts.restrictions, data);
+                updateOptions(opts);
+             }
+        });
+    }
 
     function updateOptions (opts) {
-        bs.events.emit("plugins:opts", {
-            name: config.PLUGIN_NAME,
-            opts: opts
-        });
+        if (ui) {
+            bs.events.emit("plugins:opts", {
+                name: config.PLUGIN_NAME,
+                opts: opts
+            });
+        }
         ui.emit("options:update", {
             name: config.PLUGIN_NAME,
             opts: bs.getUserPlugin(config.PLUGIN_NAME).opts
