@@ -52,7 +52,4 @@ describe(".plugin()", function () {
             done();
         });
     });
-    it("should run with BrowserSync as inline plugin with options", function (done) {
-        done();
-    });
 });

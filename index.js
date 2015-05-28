@@ -134,6 +134,15 @@ module.exports["plugin"] = function (opts, bs) {
         client.on("client:url", handleUrlEvent);
     }
 
+    function getRequestOptions(url) {
+        return {
+            url: url,
+            headers: {
+                "Accept": "text/html"
+            }
+        }
+    }
+
     /**
      * @param data
      */
@@ -144,7 +153,7 @@ module.exports["plugin"] = function (opts, bs) {
             return;
         }
 
-        request(data.url, function (error, response, body) {
+        request(getRequestOptions(data.url), function (error, response, body) {
 
             logger.debug("Stashing: {magenta:%s", data.url);
 
@@ -223,7 +232,7 @@ module.exports["plugin"] = function (opts, bs) {
 
             debug("requesting %s", url);
 
-            request(url, function (error, response, body) {
+            request(getRequestOptions(url), function (error, response, body) {
 
                 if (!error && response.statusCode == 200) {
 
