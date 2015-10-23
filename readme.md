@@ -1,17 +1,58 @@
-[![Stories in Ready](https://badge.waffle.io/shakyShane/html-injector.png?label=ready&title=Ready)](https://waffle.io/shakyShane/html-injector)
 ###HTML Injector [![Build Status](https://travis-ci.org/shakyShane/html-injector.svg?branch=master)](https://travis-ci.org/shakyShane/html-injector)
 [Browsersync](http://www.browsersync.io/) plugin for injecting HTML changes without reloading the browser. Requires an existing page with a `<body>` tag.
 
-##Install 
+## Install (Node V4.0.0 & above)
 
 ```bash
-$ npm install browser-sync bs-html-injector
+$ npm i browser-sync bs-html-injector
+```
+
+## Install (Node V0.10.x 0.12.x)
+
+```bash
+$ npm i browser-sync bs-html-injector@2
 ```
 
 ## Examples & Recipes including html-injection
 * [Examples folder](https://github.com/shakyShane/html-injector/tree/master/examples)
 * [HTML/CSS injection example](https://github.com/BrowserSync/recipes/tree/master/recipes/html.injection)
 * [Grunt, SASS, HTML/CSS injection example](https://github.com/BrowserSync/recipes/tree/master/recipes/grunt.html.injection)
+
+##Options
+
+**files** - String|Array
+File watching patterns that will trigger the injection. NOTE: Ensure you are 
+not also watching the same file through the regular Browsersync
+config - this will cause a full reload and the inject will not happen
+
+```js
+browserSync.use(require("bs-html-injector"), {
+    files: ["app/*.html", "app/templates/**"]
+});
+```
+
+**restrictions** - Array
+Limit the comparisons to a certain elements.
+
+```js
+browserSync.use(require("bs-html-injector"), {
+    files: "app/*.html",
+    restrictions: ['#header', '#footer']
+});
+```
+
+**excludedTags** - Array
+When working from scratch within the `body` tag, the plugin will work just fine. But when you start
+working with nested elements, you might want to add the following configuration to improve the 
+injecting.
+
+```js
+browserSync.use(require("bs-html-injector"), {
+    files: "app/*.html",
+    excludedTags: ["BODY"]
+});
+```
+
 
 ###Example
 Create a file called `bs.js` and enter the following: (update the paths to match yours)
@@ -105,24 +146,4 @@ module.exports = function (grunt) {
     // define default task
     grunt.registerTask('default', ['browserSync', 'watch']);
 };
-```
-
-##Options
-
-**restrictions** - Array
-Limit the comparisons to a certain element.
-
-**files** - String|Array
-File watching patterns that will trigger the injection
-
-**excludedTags** - Array
-When working from scratch within the `body` tag, the plugin will work just fine. But when you start
-working with nested elements, you might want to add the following configuration to improve the 
-injecting.
-
-```js
-browserSync.use(require("bs-html-injector"), {
-    files: "app/*.html",
-    excludedTags: ["BODY"]
-});
 ```
