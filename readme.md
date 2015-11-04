@@ -1,4 +1,4 @@
-###HTML Injector [![Build Status](https://travis-ci.org/shakyShane/html-injector.svg?branch=master)](https://travis-ci.org/shakyShane/html-injector)
+### HTML Injector [![Build Status](https://travis-ci.org/shakyShane/html-injector.svg?branch=master)](https://travis-ci.org/shakyShane/html-injector)
 [Browsersync](http://www.browsersync.io/) plugin for injecting HTML changes without reloading the browser. Requires an existing page with a `<body>` tag.
 
 ## Install (Node V4.0.0 & above)
