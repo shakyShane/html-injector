@@ -217,8 +217,9 @@ module.exports["plugin"] = function (opts, bs) {
     function requestNew (opts) {
 
         // Remove any
-        var valid = bs.io.of(bs.options.getIn(["socket", "namespace"])).sockets.map(function (client) {
-            return client.handshake.headers.referer;
+        var sockets = bs.io.of(bs.options.getIn(["socket", "namespace"])).sockets;
+        var valid = Object.keys(sockets).map(function (key) {
+            return sockets[key].handshake.headers.referer;
         });
 
         logger.debug("Cache items: {yellow:%s", Object.keys(htmlInjector.cache).length);
