@@ -39,7 +39,10 @@ describe(".plugin()", function () {
         browserSync.reset();
         var modulepath = path.dirname(require.resolve("../index"));
         var plugin = {
-            module: modulepath
+            module: modulepath,
+            options: {
+                excludedTags: ['H1']
+            }
         };
         browserSync({
             plugins: [plugin],

@@ -11,13 +11,23 @@
     "url": "https://github.com/shakyshane/html-injector/issues"
   },
   "scripts": {
-    "test": "mocha --reporter spec"
+    "test": "mocha --reporter spec",
+    "lodash": "lodash include=isUndefined,isString,isArray,filter,assign,includes,uniqBy exports=node"
   },
+  "files": [
+    "lib",
+    "lodash.custom.js",
+    "ui",
+    "index.js",
+    "client.js"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "browser-sync": "^2.7.6",
+    "browser-sync": "2.12.12",
     "chai": "^3.3.0",
+    "lodash": "4.13.1",
+    "lodash-cli": "4.13.1",
     "mocha": "^2.3.3",
     "multiline": "^1.0.2",
     "socket.io-client": "^1.1.0"
@@ -26,8 +36,6 @@
     "debug": "^2.1.3",
     "dom-compare-temp": "^0.1.0",
     "jsdom": "^6.5.1",
-    "lodash": "^3.6.0",
-    "opt-merger": "^1.1.0",
     "request": "^2.40.0"
   },
   "keywords": [

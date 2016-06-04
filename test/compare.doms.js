@@ -87,7 +87,7 @@ describe("Comparing Simple doms", function(){
         assert.equal(results[1].tagName, "H1");
     });
 
-    it("Removes duplicate diffs if on same element", function(){
+    it("Removes duplicate diffs if on same element (2)", function(){
 
         var str1 = multiline.stripIndent(function(){/*
             <!doctype html>

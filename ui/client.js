@@ -12,7 +12,7 @@
                     "options": "=",
                     "pluginOpts": "="
                 },
-                templateUrl: "html-injector.directive.html",
+                templateUrl: "html-injector/html-injector.directive.html",
                 controller: ["$scope", "Socket", function ($scope, Socket) {
 
                     var ctrl = this;
