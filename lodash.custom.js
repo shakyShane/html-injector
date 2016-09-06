@@ -1,7 +1,7 @@
 /**
  * @license
  * lodash (Custom Build) <https://lodash.com/>
- * Build: `lodash include="isUndefined,isString,isArray,filter,assign,includes,uniqBy" exports="node"`
+ * Build: `lodash include="isUndefined,isString,isArray,filter,assign,includes,uniqBy,uniq,without" exports="node"`
  * Copyright jQuery Foundation and other contributors <https://jquery.org/>
  * Released under MIT license <https://lodash.com/license>
  * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
@@ -412,6 +412,19 @@
       result[index] = iteratee(index);
     }
     return result;
+  }
+
+  /**
+   * The base implementation of `_.unary` without support for storing wrapper metadata.
+   *
+   * @private
+   * @param {Function} func The function to cap arguments for.
+   * @returns {Function} Returns the new capped function.
+   */
+  function baseUnary(func) {
+    return function(value) {
+      return func(value);
+    };
   }
 
   /**
@@ -1324,6 +1337,62 @@
    */
   function baseCreate(proto) {
     return isObject(proto) ? objectCreate(proto) : {};
+  }
+
+  /**
+   * The base implementation of methods like `_.difference` without support
+   * for excluding multiple arrays or iteratee shorthands.
+   *
+   * @private
+   * @param {Array} array The array to inspect.
+   * @param {Array} values The values to exclude.
+   * @param {Function} [iteratee] The iteratee invoked per element.
+   * @param {Function} [comparator] The comparator invoked per element.
+   * @returns {Array} Returns the new array of filtered values.
+   */
+  function baseDifference(array, values, iteratee, comparator) {
+    var index = -1,
+        includes = arrayIncludes,
+        isCommon = true,
+        length = array.length,
+        result = [],
+        valuesLength = values.length;
+
+    if (!length) {
+      return result;
+    }
+    if (iteratee) {
+      values = arrayMap(values, baseUnary(iteratee));
+    }
+    if (comparator) {
+      includes = arrayIncludesWith;
+      isCommon = false;
+    }
+    else if (values.length >= LARGE_ARRAY_SIZE) {
+      includes = cacheHas;
+      isCommon = false;
+      values = new SetCache(values);
+    }
+    outer:
+    while (++index < length) {
+      var value = array[index],
+          computed = iteratee ? iteratee(value) : value;
+
+      value = (comparator || value !== 0) ? value : 0;
+      if (isCommon && computed === computed) {
+        var valuesIndex = valuesLength;
+        while (valuesIndex--) {
+          if (values[valuesIndex] === computed) {
+            continue outer;
+          }
+        }
+        result.push(value);
+      }
+      else if (!includes(values, computed, comparator)) {
+        result.push(value);
+      }
+    }
+    return result;
   }
 
   /**
@@ -2751,6 +2820,29 @@
   /*------------------------------------------------------------------------*/
 
   /**
+   * Creates a duplicate-free version of an array, using
+   * [`SameValueZero`](http://ecma-international.org/ecma-262/6.0/#sec-samevaluezero)
+   * for equality comparisons, in which only the first occurrence of each
+   * element is kept.
+   *
+   * @static
+   * @memberOf _
+   * @since 0.1.0
+   * @category Array
+   * @param {Array} array The array to inspect.
+   * @returns {Array} Returns the new duplicate free array.
+   * @example
+   *
+   * _.uniq([2, 1, 2]);
+   * // => [2, 1]
+   */
+  function uniq(array) {
+    return (array && array.length)
+      ? baseUniq(array)
+      : [];
+  }
+
+  /**
    * This method is like `_.uniq` except that it accepts `iteratee` which is
    * invoked for each element in `array` to generate the criterion by which
    * uniqueness is computed. The iteratee is invoked with one argument: (value).
@@ -2777,6 +2869,30 @@
       ? baseUniq(array, getIteratee(iteratee))
       : [];
   }
+
+  /**
+   * Creates an array excluding all given values using
+   * [`SameValueZero`](http://ecma-international.org/ecma-262/6.0/#sec-samevaluezero)
+   * for equality comparisons.
+   *
+   * @static
+   * @memberOf _
+   * @since 0.1.0
+   * @category Array
+   * @param {Array} array The array to inspect.
+   * @param {...*} [values] The values to exclude.
+   * @returns {Array} Returns the new array of filtered values.
+   * @see _.difference, _.xor
+   * @example
+   *
+   * _.without([2, 1, 2, 3], 1, 2);
+   * // => [3]
+   */
+  var without = rest(function(array, values) {
+    return isArrayLikeObject(array)
+      ? baseDifference(array, values)
+      : [];
+  });
 
   /*------------------------------------------------------------------------*/
 
@@ -3841,8 +3957,10 @@
   lodash.memoize = memoize;
   lodash.property = property;
   lodash.rest = rest;
+  lodash.uniq = uniq;
   lodash.uniqBy = uniqBy;
   lodash.values = values;
+  lodash.without = without;
 
   /*------------------------------------------------------------------------*/
 

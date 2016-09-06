@@ -13,7 +13,7 @@ var createDom    = require("./lib/injector").createDom;
 
 var HtmlInjector = require("./lib/html-injector");
 var config       = require("./lib/config");
-var _            = require("lodash");
+var _            = require("./lodash.custom");
 
 /**
  * ON/OFF flag

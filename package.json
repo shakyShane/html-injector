@@ -12,7 +12,7 @@
   },
   "scripts": {
     "test": "mocha --reporter spec",
-    "lodash": "lodash include=isUndefined,isString,isArray,filter,assign,includes,uniqBy exports=node"
+    "lodash": "lodash include=isUndefined,isString,isArray,filter,assign,includes,uniqBy,uniq,without exports=node"
   },
   "files": [
     "lib",
@@ -26,7 +26,6 @@
   "devDependencies": {
     "browser-sync": "2.12.12",
     "chai": "^3.3.0",
-    "lodash": "4.13.1",
     "lodash-cli": "4.13.1",
     "mocha": "^2.3.3",
     "multiline": "^1.0.2",
