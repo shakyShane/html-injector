@@ -135,12 +135,12 @@ module.exports["plugin"] = function (opts, bs) {
     }
 
     function getRequestOptions(url) {
-        return {
+        return _.assign({}, opts.requestOptions, {
             url: url,
             headers: {
                 "Accept": "text/html"
             }
-        }
+        });
     }
 
     /**
