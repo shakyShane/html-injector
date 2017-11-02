@@ -18,7 +18,7 @@ $ npm i browser-sync bs-html-injector@2
 * [HTML/CSS injection example](https://github.com/BrowserSync/recipes/tree/master/recipes/html.injection)
 * [Grunt, SASS, HTML/CSS injection example](https://github.com/BrowserSync/recipes/tree/master/recipes/grunt.html.injection)
 
-##Options
+## Options
 
 **files** - String|Array
 File watching patterns that will trigger the injection. NOTE: Ensure you are 
@@ -54,7 +54,7 @@ browserSync.use(require("bs-html-injector"), {
 ```
 
 
-###Example
+### Example
 Create a file called `bs.js` and enter the following: (update the paths to match yours)
 
 ```js
@@ -74,7 +74,7 @@ browserSync.init({
 });
 ```
 
-###Gulp example
+### Gulp example
 
 ```js
 var gulp         = require("gulp");
