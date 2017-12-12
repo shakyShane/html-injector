@@ -138,7 +138,8 @@ module.exports["plugin"] = function (opts, bs) {
         return {
             url: url,
             headers: {
-                "Accept": "text/html"
+                "Accept": "text/html",
+                "User-Agent": "BrowserSync-HTML-Injector"
             }
         }
     }
