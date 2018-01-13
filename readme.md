@@ -13,6 +13,12 @@ $ npm i browser-sync bs-html-injector
 $ npm i browser-sync bs-html-injector@2
 ```
 
+## Install (Grunt)
+
+```bash
+$ npm i browser-sync bs-html-injector --save-dev
+```
+
 ## Examples & Recipes including html-injection
 * [Examples folder](https://github.com/shakyShane/html-injector/tree/master/examples)
 * [HTML/CSS injection example](https://github.com/BrowserSync/recipes/tree/master/recipes/html.injection)
