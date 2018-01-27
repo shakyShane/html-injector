@@ -187,7 +187,7 @@ module.exports["plugin"] = function (opts, bs) {
 
         debug('Responding to file change event', data.namespace);
 
-        requestNew(opts);
+        requestNew(opts, data);
     }
 
     function pluginEvent () {
@@ -214,7 +214,7 @@ module.exports["plugin"] = function (opts, bs) {
      * @param {String} url
      * @param {Object} opts - plugin options
      */
-    function requestNew (opts) {
+    function requestNew (opts, data) {
 
         // Remove any
         var sockets = bs.io.of(bs.options.getIn(["socket", "namespace"])).sockets;
@@ -231,26 +231,29 @@ module.exports["plugin"] = function (opts, bs) {
                 return;
             }
 
-            debug("requesting %s", url);
-
-            request(getRequestOptions(url), function (error, response, body) {
-
-                if (!error && response.statusCode == 200) {
-
-                    var tasks = htmlInjector.process(body, htmlInjector.cache[url], url, opts);
-
-                    if (tasks.length) {
-                        debug("%s tasks returned", tasks.length);
-                        tasks.forEach(function (task) {
-                            debug("Task: TAG: %s, INDEX: %s", task.tagName, task.index);
-                            clients.emit(config.CLIENT_EVENT, task);
-                        });
-                    } else {
-                        debug("0 tasks returned, reloading instead");
-                        clients.emit("browser:reload");
+            if (!data || url.indexOf(data.path) !== -1) {
+                
+                debug("requesting %s", url);
+    
+                request(getRequestOptions(url), function (error, response, body) {
+    
+                    if (!error && response.statusCode == 200) {
+    
+                        var tasks = htmlInjector.process(body, htmlInjector.cache[url], url, opts);
+    
+                        if (tasks.length) {
+                            debug("%s tasks returned", tasks.length);
+                            tasks.forEach(function (task) {
+                                debug("Task: TAG: %s, INDEX: %s", task.tagName, task.index);
+                                clients.emit(config.CLIENT_EVENT, task);
+                            });
+                        } else {
+                            debug("0 tasks returned, reloading instead");
+                            clients.emit("browser:reload");
+                        }
                     }
-                }
-            });
+                });
+            }
         });
     }
 };
